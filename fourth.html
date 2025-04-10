@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一带一路建设</title>
+    <link href="https://fonts.googleapis.com/css?family=Merriweather:900&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+          --color-primary: #002626;
+          --color-secondary: #F0F7EE;
+          --duration: 1s;
+          --nav-duration: calc(var(--duration) / 4);
+          --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+          --space: 1rem;
+          --font-primary: 'Helvetica', sans-serif;
+          --font-heading: 'Merriweather', serif;
+          --font-size: 1.125rem;
+          --line-height: 1.5;
+          --colorShadeA: rgb(106, 163, 137);
+          --colorShadeB: rgb(121, 186, 156);
+          --colorShadeC: rgb(150, 232, 195);
+          --colorShadeD: rgb(187, 232, 211);
+          --colorShadeE: rgb(205, 255, 232);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            background-image: url('img/14.png');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 2rem; /* Add padding to body instead of main */
+        }
+        /* 通用标头样式 */
+        #header-container {
+            background: linear-gradient(135deg, #ecf6ff, #8dbeeb);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            width: 96%;
+            padding: 20px 30px; /* Adjusted padding */
+            text-align: center;
+            position: relative;
+            margin: 1rem auto; /* Adjusted top/bottom margin */
+            display: flex; /* Use flexbox */
+            align-items: center; /* Center items vertically */
+            justify-content: center; /* Center items horizontally */
+        }
+        header {
+            position: relative;
+            display: flex; /* Make header content flex */
+            align-items: center; /* Align logo and title */
+            width: 100%; /* Ensure header takes full width */
+            justify-content: center; /* Center content horizontally */
+        }
+        header h1 {
+            color: rgb(0, 0, 0);
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            width: 100%; /* Take full width */
+            text-align: center; /* Center text */
+        }
+        
+        /* 新导航菜单样式 */
+        .main-navigation-toggle {
+          position: fixed;
+          height: 1px; 
+          width: 1px;
+          overflow: hidden;
+          clip: rect(1px, 1px, 1px, 1px);
+          white-space: nowrap;
+        }
+        
+        .main-navigation-toggle + label {
+          position: fixed;
+          top: calc(var(--space) * 1.5);
+          right: calc(var(--space) * 2);
+          cursor: pointer;
+          z-index: 30;
+        }
+        
+        .icon--menu-toggle {
+          --size: calc(1rem + 4vmin);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: var(--size);
+          height: var(--size);
+          stroke-width: 6;
+        }
+        
+        .icon-group {
+          transform: translateX(0);
+          transition: transform var(--nav-duration) var(--ease);
+        }
+        
+        .icon--menu {
+          stroke: var(--color-primary);
+        }
+        
+        .icon--close {
+          stroke: var(--color-secondary);
+          transform: translateX(-100%);
+        }
+        
+        .main-navigation {
+          position: fixed;
+          top: 0;
+          left: 0;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          height: 100%;
+          transform: translateX(-100%);
+          transition: transform var(--nav-duration);
+          z-index: 20;
+        }
+        
+        .main-navigation:after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: #8dbeeb;
+          transform-origin: 0 50%;
+          z-index: -1;
+        }
+        
+        .main-navigation ul {
+          font-size: 12vmin;
+          font-family: var(--font-heading);
+          width: 100%;
+          padding: 0;
+          margin: 0;
+          list-style: none;
+        }
+        
+        .main-navigation li {
+          --border-size: 1vmin;
+          display: flex;
+          align-items: center;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .main-navigation li:after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: var(--border-size);
+          background-color: var(--color-secondary);
+          transform-origin: 0 50%;
+          transform: translateX(-100%) skew(15deg);
+        }
+        
+        .main-navigation a {
+          display: inline-block;
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+          color: var(--color-secondary);
+          line-height: 1;
+          text-decoration: none;
+          user-select: none;
+          padding: var(--space) calc(var(--space) * 2) calc(var(--space) + var(--border-size) / 2);
+          transform: translateY(100%);
+        }
+        
+        .main-content {
+          margin: 2rem auto;
+          max-width: 1200px;
+          width: 96%;
+          padding: 0 calc(var(--space) * 2);
+          transform: translateX(0);
+          transition: transform calc(var(--nav-duration) * 2) var(--ease);
+          padding-bottom: 0; /* Remove bottom padding from main */
+        }
+        
+        .main-content > * + * {
+          margin-top: calc(var(--space) * var(--line-height));
+        }
+        
+        .main-navigation-toggle:checked ~ label .icon--menu-toggle .icon-group {
+          transform: translateX(100%);
+        }
+        
+        .main-navigation-toggle:checked ~ .main-content {
+          transform: translateX(10%);
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation {
+          transition-duration: 0s;
+          transform: translateX(0);
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation:after {
+          animation: nav-bg var(--nav-duration) var(--ease) forwards;
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation li:after {
+          animation: nav-line var(--duration) var(--ease) forwards;
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation a {
+          animation: link-appear calc(var(--duration) * 1.5) var(--ease) forwards;
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(1):after,
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(1) a {
+          animation-delay: calc((var(--duration) / 2) * 1 * 0.125);
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(2):after,
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(2) a {
+          animation-delay: calc((var(--duration) / 2) * 2 * 0.125);
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(3):after,
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(3) a {
+          animation-delay: calc((var(--duration) / 2) * 3 * 0.125);
+        }
+        
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(4):after,
+        .main-navigation-toggle:checked ~ .main-navigation li:nth-child(4) a {
+          animation-delay: calc((var(--duration) / 2) * 4 * 0.125);
+        }
+        
+        @keyframes nav-bg {
+          from { transform: translateX(-100%) skewX(-15deg); }
+          to { transform: translateX(0); }
+        }
+        
+        @keyframes nav-line {
+          0%   { transform: scaleX(0); transform-origin: 0 50%; }
+          35%  { transform: scaleX(1.001); transform-origin: 0 50%; }
+          65%  { transform: scaleX(1.001); transform-origin: 100% 50%; }
+          100% { transform: scaleX(0); transform-origin: 100% 50%; }
+        }
+        
+        @keyframes link-appear {
+          0%, 25%   { transform: translateY(100%); }
+          50%, 100% { transform: translateY(0); }
+        }
+
+        /* Map Container Style */
+        #route-map-container {
+            width: 80%;
+            height: 600px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        /* 播放动画按钮样式（参考 third.html 的 big-button 样式） */
+        #animate-container {
+            text-align: center;
+            margin: 2rem auto; /* Increased top/bottom margin */
+        }
+        #animate-button {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            outline: none;
+            border: 0;
+            vertical-align: middle;
+            text-decoration: none;
+            font-size: 1.5rem;
+            color: var(--colorShadeA);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-family: "Open Sans", sans-serif;
+            padding: 1em 2em;
+            border: 2px solid var(--colorShadeA);
+            border-radius: 1em;
+            background: var(--colorShadeE);
+            transform-style: preserve-3d;
+            transition: all 175ms cubic-bezier(0, 0, 1, 1);
+        }
+        #animate-button::before {
+            position: absolute;
+            content: "";
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--colorShadeC);
+            border-radius: inherit;
+            box-shadow: 0 0 0 2px var(--colorShadeB), 0 0.75em 0 0 var(--colorShadeA);
+            transform: translate3d(0, 0.75em, -1em);
+            transition: all 175ms cubic-bezier(0, 0, 1, 1);
+            z-index: -1;
+        }
+        #animate-button:hover {
+            background: var(--colorShadeD);
+            transform: translate(0, 0.375em);
+        }
+        #animate-button:hover::before {
+            transform: translate3d(0, 0.75em, -1em);
+        }
+        #animate-button:active {
+            transform: translate(0em, 0.75em);
+        }
+        #animate-button:active::before {
+            transform: translate3d(0, 0, -1em);
+            box-shadow: 0 0 0 2px var(--colorShadeB), 0 0.25em 0 0 var(--colorShadeB);
+        }
+
+        /* Custom Leaflet Tooltip Style */
+        .leaflet-tooltip {
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent dark background */
+            color: #ffffff; /* White text */
+            border: none; /* Remove default border */
+            border-radius: 4px; /* Rounded corners */
+            box-shadow: none; /* Remove default shadow */
+            padding: 6px 10px; /* Adjust padding */
+            white-space: nowrap; /* Prevent wrapping */
+            font-size: 12px; /* Adjust font size if needed */
+            z-index: 1000; /* Ensure tooltip appears above other elements */
+        }
+        /* Remove the small pointer triangle */
+        .leaflet-tooltip-top::before,
+        .leaflet-tooltip-bottom::before,
+        .leaflet-tooltip-left::before,
+        .leaflet-tooltip-right::before {
+            border: none !important; 
+        }
+
+        /* Custom class for route tooltips */
+        .route-tooltip {
+            transform: translate(0, -5px);
+            transition: transform 0.2s ease;
+            font-weight: bold;
+            pointer-events: none;
+            box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Remove highlight outline on SVG paths */
+        .leaflet-interactive {
+            outline: none !important;
+        }
+
+        /* Animation for route lines */
+        @keyframes pulseLine {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -30; }
+        }
+
+        /* Custom class for animated lines */
+        .animated-line {
+            stroke-dasharray: 15, 15;
+            animation: pulseLine 2s linear infinite;
+        }
+
+        /* Provide wider hover area for lines */
+        .leaflet-pane path {
+            stroke-width: 3px; /* Visual width */
+            pointer-events: visibleStroke;
+        }
+        
+        /* Chart Section Styles */
+        #chart-section {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            margin-top: 2rem;
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        #country-selector {
+            flex: 1; /* Take up available space */
+            min-width: 250px; /* Minimum width before wrapping */
+            max-width: 300px; /* Maximum width */
+            padding-right: 20px;
+            border-right: 1px solid #eee; /* Separator line */
+            margin-bottom: 20px; /* Space below when wrapped */
+            max-height: 500px; /* Limit height and add scroll */
+            overflow-y: auto;
+        }
+        
+        #chart-container {
+            flex: 3; /* Take up more space */
+            min-width: 400px; /* Minimum width */
+            position: relative; /* Needed for Chart.js responsiveness */
+            height: 500px; /* Match max-height of selector */
+        }
+        
+        #country-selector h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: var(--color-primary);
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            align-items: center;
+        }
+        
+        .country-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+        }
+        
+        .country-list li {
+            margin-bottom: 5px;
+            display: flex; /* Use flex for alignment */
+            align-items: center; /* Vertically center items */
+            margin-bottom: 10px; /* Increased spacing */
+        }
+        
+        .country-list label {
+            cursor: pointer;
+            display: flex; /* Use flex for internal alignment */
+            align-items: center; /* Vertically center toggle and text */
+            width: 100%; /* Make label take full width */
+        }
+        
+        .country-list input[type="checkbox"] {
+            /* Hide default checkbox */
+            border: 0;
+            clip: rect(0 0 0 0);
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            padding: 0;
+            position: absolute;
+            width: 1px;
+        }
+        
+        /* Collapsible Section Styles */
+        .continent-section {
+            margin-bottom: 15px;
+        }
+        .continent-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 5px;
+            background-color: #eef;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 1.1rem; /* Slightly larger header font */
+        }
+        .continent-header::after {
+            content: '\25B6'; /* Right-pointing triangle */
+            font-size: 0.8em;
+            transition: transform 0.2s ease-in-out;
+        }
+        .continent-section.open .continent-header::after {
+            transform: rotate(90deg);
+        }
+        .country-list-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding-left: 10px; /* Indent country list */
+        }
+        .continent-section.open .country-list-container {
+            max-height: 1000px; /* Allow expansion */
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* Custom Toggle Switch Styles */
+        :root {
+            --color-toggle-on: rgb(0, 120, 215);
+            --color-toggle-off: white;
+            --toggle-transition: 200ms;
+            --toggle-height: 1.5rem; /* Adjusted size */
+            --toggle-width: 3.5rem; /* Adjusted size */
+            --toggle-border: 2px;
+            --toggle-knob-size: calc(var(--toggle-height) - 8px);
+            --toggle-knob-pos: 2px;
+            --toggle-knob-translate: calc(var(--toggle-width) - var(--toggle-knob-size) - 6px);
+        }
+
+        .toggle {
+            display: inline-block; /* Changed from table */
+            vertical-align: middle;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            margin-right: 10px; /* Space between toggle and label text */
+        }
+
+        .toggle-visual {
+            cursor: pointer;
+            border-radius: var(--toggle-height);
+            width: var(--toggle-width);
+            height: var(--toggle-height);
+            background: var(--color-toggle-off);
+            border: var(--toggle-border) solid black;
+            user-select: none;
+            position: relative;
+            transition: var(--toggle-transition) ease-out;
+            font-size: 0; /* Hide potential text nodes */
+            display: block; /* Ensure it behaves like a block */
+        }
+
+        .toggle-visual:hover {
+             box-shadow: 0 0 6px rgba(0, 120, 215, 0.7);
+        }
+
+        .toggle-visual::before {
+            will-change: transform;
+            display: block;
+            position: absolute;
+            top: var(--toggle-knob-pos);
+            left: var(--toggle-knob-pos);
+            content: '';
+            width: var(--toggle-knob-size);
+            height: var(--toggle-knob-size);
+            background: black;
+            border-radius: 50%;
+            transition: var(--toggle-transition);
+        }
+
+        /* No ::after pseudo-element needed for on/off text in this context */
+
+        .country-list input[type="checkbox"]:checked + .toggle-visual {
+            background: var(--color-toggle-on);
+            border-color: var(--color-toggle-on);
+        }
+
+        .country-list input[type="checkbox"]:checked + .toggle-visual::before {
+            background: var(--color-toggle-off);
+            transform: translateX(var(--toggle-knob-translate));
+        }
+
+        .country-list input[type="checkbox"]:focus + .toggle-visual {
+            box-shadow: 0 0 0 2px rgba(0, 120, 215, 0.5); /* Focus ring */
+        }
+
+        .country-label-text {
+             font-size: 1.2rem; /* Further increased font size */
+             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Rounded font */
+             vertical-align: middle; /* Keep for baseline alignment if needed */
+             margin-left: 5px; /* Add slight space after toggle if needed, handled by toggle margin */
+        }
+
+        /* Style for the Chart Title */
+        .chart-title {
+            background: linear-gradient(135deg, #ecf6ff, #8dbeeb); /* Match main header gradient */
+            border-radius: 8px; /* Slightly smaller radius */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Softer shadow */
+            color: rgb(0, 0, 0);
+            font-size: 1.8rem; /* Smaller than main H1 */
+            margin: 0 auto 15px auto; /* Center horizontally, add bottom margin */
+            padding: 15px 20px; /* Adjust padding */
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* Softer text shadow */
+            width: 95%; /* Take most of the chart section width */
+        }
+
+        /* Responsive adjustments if needed */
+        @media (max-width: 768px) {
+            #chart-section {
+                flex-direction: column;
+            }
+            #country-selector {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+                padding-right: 0;
+                padding-bottom: 15px;
+                margin-bottom: 15px;
+                max-height: 300px; /* Adjust height for smaller screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 新导航菜单 -->
+    <input id="page-nav-toggle" class="main-navigation-toggle" type="checkbox" />
+    <label for="page-nav-toggle">
+      <svg class="icon--menu-toggle" viewBox="0 0 60 30">
+        <g class="icon-group">
+          <g class="icon--menu">
+            <path d="M 6 0 L 54 0" />
+            <path d="M 6 15 L 54 15" />
+            <path d="M 6 30 L 54 30" />
+          </g>
+          <g class="icon--close">
+            <path d="M 15 0 L 45 30" />
+            <path d="M 15 30 L 45 0" />
+          </g>
+        </g>
+      </svg>
+    </label>
+
+    <nav class="main-navigation">
+      <ul>
+        <li><a href="index.html">中国外交历史</a></li>
+        <li><a href="first.html">建交动态地图</a></li>
+        <li><a href="second.html">里程碑事件</a></li>
+        <li><a href="third.html">文化传播图</a></li>
+      </ul>
+    </nav>
+    
+    <div id="header-container">
+        <header>
+            <h1>一带一路建设</h1>
+        </header>
+    </div>
+    <main class="main-content">
+        <!-- 添加播放动画按钮 (Removed from here) -->
+        <!--
+        <div id="animate-container">
+            <button id="animate-button">播放动画</button>
+        </div>
+        -->
+        
+        <div id="route-map-container"></div>
+
+        <!-- 添加播放动画按钮 (Moved here: Between map and chart) -->
+        <div id="animate-container">
+            <button id="animate-button">播放动画</button>
+        </div>
+
+        <!-- Chart Section -->
+        <div id="chart-section">
+            <h2 class="chart-title">交易数据可视</h2>
+            <div id="country-selector">
+                <h3>选择国家 (最多3个)</h3>
+                <div id="asia-section" class="continent-section">
+                    <h4 class="continent-header">亚洲</h4>
+                    <div class="country-list-container">
+                        <ul id="asia-countries" class="country-list"></ul>
+                    </div>
+                </div>
+                <div id="europe-section" class="continent-section">
+                    <h4 class="continent-header">欧洲</h4>
+                    <div class="country-list-container">
+                        <ul id="europe-countries" class="country-list"></ul>
+                    </div>
+                </div>
+            </div>
+            <div id="chart-container">
+                <canvas id="tradeChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Custom Map Script -->
+    <script>
+      // 1. 初始化 Leaflet 地图（使用高德地图切片）
+      var map = L.map('route-map-container').setView([30, 80], 3);
+      
+      L.tileLayer('http://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}', {
+        subdomains: ['1','2','3','4'],
+        attribution: '© 高德地图'
+      }).addTo(map);
+
+      // 用于存储线路动画数据
+      var animations = [];
+
+      // 2. 加载并处理 GeoJSON 数据
+      fetch('data/train.json')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(geoJsonData => {
+          console.log("Loaded GeoJSON data:", geoJsonData);
+
+          L.geoJSON(geoJsonData, {
+            // 对于 Point 节点，统一使用 img\火车站.png 作为图标
+            pointToLayer: function(feature, latlng) {
+              var stationIcon = L.icon({
+                iconUrl: 'img/火车站.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+              });
+              return L.marker(latlng, { icon: stationIcon });
+            },
+            // 对于 LineString（线路）设定样式
+            style: function(feature) {
+              if(feature.geometry.type === "LineString") {
+                var lineColor = "#ff7800"; // 默认颜色
+                if(feature.properties.name.includes("海上")) {
+                  lineColor = "#007bff";
+                }
+                return {
+                  color: lineColor,
+                  weight: 5, // Increased from 3 to 5 for better visibility
+                  opacity: 0.85, // Increased from 0.7 for better visibility
+                  className: 'animated-line', // Apply the animation class
+                  dashArray: '15, 15', // Match the CSS animation
+                  lineCap: 'round', // Rounded line ends look better
+                  lineJoin: 'round', // Rounded corners look better
+                  interactive: true // Ensure it responds to mouse events
+                };
+              }
+            },
+            // 遍历每个要素，绑定弹出框并存储动画数据（不立即触发动画）
+            onEachFeature: function(feature, layer) {
+              if(feature.properties && feature.properties.name) {
+                // Enhanced tooltip with permanent: false (only show on hover)
+                // and sticky: true (follow cursor along line)
+                layer.bindTooltip(feature.properties.name, { 
+                  sticky: true,
+                  permanent: false,
+                  opacity: 0.9,
+                  className: 'route-tooltip'
+                });
+                
+                // Add these events to ensure the line is highlighted on hover
+                layer.on({
+                  mouseover: function(e) {
+                    var layer = e.target;
+                    layer.setStyle({
+                      weight: 6,
+                      opacity: 1
+                    });
+                    layer.bringToFront();
+                  },
+                  mouseout: function(e) {
+                    var layer = e.target;
+                    // Reset to original style
+                    if(feature.geometry.type === "LineString") {
+                      var lineColor = "#ff7800";
+                      if(feature.properties.name.includes("海上")) {
+                        lineColor = "#007bff";
+                      }
+                      layer.setStyle({
+                        color: lineColor,
+                        weight: 5,
+                        opacity: 0.85
+                      });
+                    }
+                  }
+                });
+              }
+              if(feature.geometry.type === "LineString") {
+                // 将 GeoJSON 中的坐标转换为 [lat, lng] 格式
+                var coords = feature.geometry.coordinates.map(function(coord){
+                  return [coord[1], coord[0]];
+                });
+                // 根据线路名称选择动画图标
+                var movingIconUrl = (feature.properties.name === "海上丝绸之路(上海-鹿特丹)") ?
+                  'img/轮船.png' : 'img/train.png';
+                var movingIcon = L.icon({
+                  iconUrl: movingIconUrl,
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 16]
+                });
+                // 创建动画标记，不立即启动动画
+                var animMarker = L.marker(coords[0], { icon: movingIcon }).addTo(map);
+                // 保存动画数据，包括坐标集合、当前段索引及动画速度
+                animations.push({
+                  marker: animMarker,
+                  coords: coords,
+                  speed: feature.properties.speed || 1
+                });
+              }
+            }
+          }).addTo(map);
+          console.log("Routes and markers added to map.");
+        })
+        .catch(err => {
+          console.error('加载或处理 GeoJSON 数据失败:', err);
+          alert('无法加载路线数据，请检查文件路径或网络连接。');
+        });
+      
+      // 匀速动画：使用 requestAnimationFrame 实现平滑插值
+      function animateSegment(marker, start, end, duration, callback) {
+        var startTime = null;
+        function step(timestamp) {
+          if (!startTime) startTime = timestamp;
+          var progress = (timestamp - startTime) / duration;
+          if (progress > 1) progress = 1;
+          var lat = start[0] + (end[0] - start[0]) * progress;
+          var lng = start[1] + (end[1] - start[1]) * progress;
+          marker.setLatLng([lat, lng]);
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            callback && callback();
+          }
+        }
+        requestAnimationFrame(step);
+      }
+
+      function animateRoute(item, index) {
+        if(index >= item.coords.length - 1) return;
+        // 每个段动画时长（毫秒），可根据 speed 调整（此处设定 1000ms 为标准时间）
+        var duration = 1000 / item.speed;
+        animateSegment(item.marker, item.coords[index], item.coords[index+1], duration, function(){
+          animateRoute(item, index + 1);
+        });
+      }
+      
+      // 监听"播放动画"按钮点击事件，触发所有线路的平滑动画
+      document.getElementById("animate-button").addEventListener("click", function(){
+        animations.forEach(function(item){
+          animateRoute(item, 0);
+        });
+      });
+    </script>
+    
+    <!-- 设置页面加载回调 -->
+    <script>
+      // ... existing code ...
+    </script>
+
+    <!-- Chart Logic -->
+    <script>
+      // --- Chart Logic ---
+      
+      const tradeDataUrl = 'data/output.json';
+      const asiaList = document.getElementById('asia-countries');
+      const europeList = document.getElementById('europe-countries');
+      const ctx = document.getElementById('tradeChart').getContext('2d');
+      let tradeChart;
+      let allTradeData = {};
+      let selectedCountries = [];
+      const maxSelections = 3;
+      
+      // Define country categories (adjust as needed)
+      const asianCountries = ["阿富汗", "阿联酋", "阿曼", "阿塞拜疆", "巴基斯坦", "巴勒斯坦", "巴林", "东帝汶", "菲律宾", "蒙古", "格鲁吉亚", "哈萨克斯坦", "韩国", "吉尔吉斯斯坦", "柬埔寨", "卡塔尔", "科威特", "老挝", "黎巴嫩", "马尔代夫", "马来西亚", "孟加拉国", "缅甸", "尼泊尔", "沙特阿拉伯", "斯里兰卡", "塔吉克斯坦", "泰国", "土耳其", "土库曼斯坦", "文莱", "乌兹别克斯坦", "新加坡", "叙利亚", "亚美尼亚", "也门", "伊拉克", "伊朗", "印度尼西亚", "约旦", "越南"];
+      const europeanCountries = ["阿尔巴尼亚", "爱沙尼亚", "奥地利", "白俄罗斯", "保加利亚", "北马其顿", "波黑", "波兰", "俄罗斯", "黑山", "捷克", "克罗地亚", "拉脱维亚", "立陶宛", "卢森堡", "罗马尼亚", "马耳他", "摩尔多瓦", "葡萄牙", "塞尔维亚", "塞浦路斯", "斯洛伐克", "斯洛文尼亚", "乌克兰", "希腊", "匈牙利", "意大利"];
+      
+      // Color generation utility
+      function generateColor(index) {
+          const colors = [
+              '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+              '#E74C3C', '#8E44AD', '#2ECC71', '#F1C40F', '#3498DB', '#E67E22'
+          ];
+          return colors[index % colors.length];
+      }
+      
+      // Populate country lists with toggles and collapsible sections
+      function populateCountrySelectors(data) {
+          const countries = Object.keys(data);
+          countries.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+
+          // Clear existing lists first
+          asiaList.innerHTML = '';
+          europeList.innerHTML = '';
+
+          countries.forEach(country => {
+              const listItem = document.createElement('li');
+
+              // Create the custom toggle structure
+              const label = document.createElement('label'); // Label wraps everything
+              label.htmlFor = `cb-${country}`; // Associate label with input
+
+              const checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.id = `cb-${country}`;
+              checkbox.value = country;
+              checkbox.addEventListener('change', handleCheckboxChange);
+              // checkbox.classList.add('disappear-from-screen'); // Class applied via CSS
+
+              const toggleVisual = document.createElement('div');
+              toggleVisual.classList.add('toggle-visual');
+              // No need for data-on/data-off attributes here
+
+              const toggleContainer = document.createElement('span'); // Use span for inline layout
+              toggleContainer.classList.add('toggle');
+              toggleContainer.appendChild(checkbox);
+              toggleContainer.appendChild(toggleVisual);
+
+              const labelText = document.createElement('span');
+              labelText.classList.add('country-label-text');
+              labelText.appendChild(document.createTextNode(country));
+
+              label.appendChild(toggleContainer);
+              label.appendChild(labelText);
+              listItem.appendChild(label);
+
+              if (asianCountries.includes(country)) {
+                  asiaList.appendChild(listItem);
+              } else if (europeanCountries.includes(country)) {
+                  europeList.appendChild(listItem);
+              }
+          });
+
+         // Add event listeners for collapsible sections
+          document.querySelectorAll('.continent-header').forEach(header => {
+              header.addEventListener('click', () => {
+                  const section = header.closest('.continent-section');
+                  section.classList.toggle('open');
+              });
+          });
+
+          // Optionally open one section by default
+          // document.getElementById('asia-section').classList.add('open');
+      }
+      
+      // Initialize Chart
+      function initializeChart() {
+          tradeChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: [], // Years will go here
+                  datasets: [] // Country data will go here
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      x: {
+                          title: {
+                              display: true,
+                              text: '年份'
+                          }
+                      },
+                      y: {
+                          title: {
+                              display: true,
+                              text: '金额 (万美元)'
+                          },
+                          beginAtZero: true
+                      }
+                  },
+                  plugins: {
+                      legend: {
+                          position: 'top',
+                      },
+                      tooltip: {
+                          mode: 'index',
+                          intersect: false,
+                      }
+                  }
+              }
+          });
+      }
+      
+      // Update Chart Data
+      function updateChart() {
+          if (!tradeChart || !allTradeData) return;
+      
+          const datasets = [];
+          const years = new Set();
+      
+          selectedCountries.forEach((country, index) => {
+              const countryData = allTradeData[country];
+              if (!countryData) return;
+      
+              const exportColor = generateColor(index * 2);
+              const importColor = generateColor(index * 2 + 1);
+      
+              // Process Exports
+              if (countryData['对中国出口']) {
+                  const exportDataPoints = countryData['对中国出口'].map(d => {
+                      years.add(d.year);
+                      return { x: d.year, y: d.value / 10000 }; // Convert to 万美元
+                  }).sort((a, b) => a.x.localeCompare(b.x)); // Ensure sorted by year
+                  
+                  datasets.push({
+                      label: `${country} 出口`,
+                      data: exportDataPoints,
+                      borderColor: exportColor,
+                      backgroundColor: exportColor + '33', // Semi-transparent fill
+                      tension: 0.1,
+                      fill: false
+                  });
+              }
+      
+              // Process Imports
+              if (countryData['从中国进口']) {
+                   const importDataPoints = countryData['从中国进口'].map(d => {
+                      years.add(d.year);
+                      return { x: d.year, y: d.value / 10000 }; // Convert to 万美元
+                  }).sort((a, b) => a.x.localeCompare(b.x)); // Ensure sorted by year
+                  
+                   datasets.push({
+                      label: `${country} 进口`,
+                      data: importDataPoints,
+                      borderColor: importColor,
+                      backgroundColor: importColor + '33',
+                      tension: 0.1,
+                      fill: false
+                  });
+              }
+          });
+      
+          // Update chart labels (years) and datasets
+          tradeChart.data.labels = Array.from(years).sort();
+          tradeChart.data.datasets = datasets;
+          tradeChart.update();
+          
+          // Enable/disable checkboxes based on selection limit
+          const allCheckboxes = document.querySelectorAll('#country-selector input[type="checkbox"]');
+           allCheckboxes.forEach(cb => {
+               if (selectedCountries.length >= maxSelections && !cb.checked) {
+                   cb.disabled = true;
+               } else {
+                   cb.disabled = false;
+               }
+           });
+      }
+      
+      // Handle Checkbox Changes
+      function handleCheckboxChange(event) {
+          const country = event.target.value;
+          if (event.target.checked) {
+              if (selectedCountries.length < maxSelections) {
+                  selectedCountries.push(country);
+              } else {
+                  // Prevent checking more than maxSelections (though disabling should handle this)
+                  event.target.checked = false; 
+                  alert(`最多只能选择 ${maxSelections} 个国家。`);
+                  return; 
+              }
+          } else {
+              selectedCountries = selectedCountries.filter(c => c !== country);
+          }
+          updateChart();
+      }
+      
+      // Fetch data and initialize
+      fetch(tradeDataUrl)
+          .then(response => {
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              return response.json();
+          })
+          .then(data => {
+              allTradeData = data;
+              populateCountrySelectors(allTradeData);
+              initializeChart();
+              updateChart(); // Initial chart state (empty)
+          })
+          .catch(error => {
+              console.error('无法加载贸易数据:', error);
+              alert('无法加载贸易数据，请检查文件或网络。');
+          });
+    
+    </script>
+</body>
+</html>

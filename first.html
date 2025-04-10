@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>建交动态地图</title>
+  <link href="https://fonts.googleapis.com/css?family=Merriweather:900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --color-primary: #002626;
+      --color-secondary: #F0F7EE;
+      --duration: 1s;
+      --nav-duration: calc(var(--duration) / 4);
+      --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+      --space: 1rem;
+      --font-primary: 'Helvetica', sans-serif;
+      --font-heading: 'Merriweather', serif;
+      --font-size: 1.125rem;
+      --line-height: 1.5;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      background-image: url(img/14.png);
+      background-size: cover;
+      background-attachment: fixed;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+      padding-bottom: 2rem; /* Add padding to body */
+    }
+    /* 通用标头样式 */
+    #header-container {
+      background: linear-gradient(135deg, #ecf6ff, #8dbeeb);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      width: 96%;
+      padding: 20px 30px; /* Adjusted padding */
+      text-align: center;
+      position: relative;
+      margin: 1rem auto; /* Adjusted top/bottom margin */
+      display: flex; /* Use flexbox */
+      align-items: center; /* Center items vertically */
+      justify-content: center; /* Center items horizontally */
+    }
+    header {
+      position: relative;
+      display: flex; /* Make header content flex */
+      align-items: center; /* Align logo and title */
+      width: 100%; /* Ensure header takes full width */
+      justify-content: center; /* Center content horizontally */
+    }
+    header h1 {
+      color: rgb(0, 0, 0);
+      font-size: 2.5rem;
+      margin: 0;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+      width: 100%; /* Take full width */
+      text-align: center; /* Center text */
+    }
+    
+    /* 新导航菜单样式 */
+    .main-navigation-toggle {
+      position: fixed;
+      height: 1px; 
+      width: 1px;
+      overflow: hidden;
+      clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+    
+    .main-navigation-toggle + label {
+      position: fixed;
+      top: calc(var(--space) * 1.5);
+      right: calc(var(--space) * 2);
+      cursor: pointer;
+      z-index: 30;
+    }
+    
+    .icon--menu-toggle {
+      --size: calc(1rem + 4vmin);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--size);
+      height: var(--size);
+      stroke-width: 6;
+    }
+    
+    .icon-group {
+      transform: translateX(0);
+      transition: transform var(--nav-duration) var(--ease);
+    }
+    
+    .icon--menu {
+      stroke: var(--color-primary);
+    }
+    
+    .icon--close {
+      stroke: var(--color-secondary);
+      transform: translateX(-100%);
+    }
+    
+    .main-navigation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      transform: translateX(-100%);
+      transition: transform var(--nav-duration);
+      z-index: 20;
+    }
+    
+    .main-navigation:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #8dbeeb;
+      transform-origin: 0 50%;
+      z-index: -1;
+    }
+    
+    .main-navigation ul {
+      font-size: 12vmin;
+      font-family: var(--font-heading);
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    
+    .main-navigation li {
+      --border-size: 1vmin;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .main-navigation li:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: var(--border-size);
+      background-color: var(--color-secondary);
+      transform-origin: 0 50%;
+      transform: translateX(-100%) skew(15deg);
+    }
+    
+    .main-navigation a {
+      display: inline-block;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      color: var(--color-secondary);
+      line-height: 1;
+      text-decoration: none;
+      user-select: none;
+      padding: var(--space) calc(var(--space) * 2) calc(var(--space) + var(--border-size) / 2);
+      transform: translateY(100%);
+    }
+    
+    .main-content {
+      margin: 6rem auto;
+      max-width: none;
+      width: 100%;
+      padding: 0;
+      text-align: center;
+      transform: translateX(0);
+      transition: transform calc(var(--nav-duration) * 2) var(--ease);
+    }
+    
+    .main-content > * + * {
+      margin-top: calc(var(--space) * var(--line-height));
+    }
+    
+    .main-navigation-toggle:checked ~ label .icon--menu-toggle .icon-group {
+      transform: translateX(100%);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-content {
+      transform: translateX(10%);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation {
+      transition-duration: 0s;
+      transform: translateX(0);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation:after {
+      animation: nav-bg var(--nav-duration) var(--ease) forwards;
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:after {
+      animation: nav-line var(--duration) var(--ease) forwards;
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation a {
+      animation: link-appear calc(var(--duration) * 1.5) var(--ease) forwards;
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(1):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(1) a {
+      animation-delay: calc((var(--duration) / 2) * 1 * 0.125);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(2):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(2) a {
+      animation-delay: calc((var(--duration) / 2) * 2 * 0.125);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(3):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(3) a {
+      animation-delay: calc((var(--duration) / 2) * 3 * 0.125);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(4):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(4) a {
+      animation-delay: calc((var(--duration) / 2) * 4 * 0.125);
+    }
+    
+    @keyframes nav-bg {
+      from { transform: translateX(-100%) skewX(-15deg) }
+      to { transform: translateX(0) }
+    }
+    
+    @keyframes nav-line {
+      0%   { transform: scaleX(0); transform-origin: 0 50%; }
+      35%  { transform: scaleX(1.001); transform-origin: 0 50%; }
+      65%  { transform: scaleX(1.001); transform-origin: 100% 50%; }
+      100% { transform: scaleX(0); transform-origin: 100% 50%; }
+    }
+    
+    @keyframes link-appear {
+      0%, 25%   { transform: translateY(100%); }
+      50%, 100% { transform: translateY(0); }
+    }
+
+    /* 地图容器样式 */
+    #map-container {
+      width: 80vw;
+      height: 600px;
+      margin: 20px auto;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      display: block;
+      left: auto;
+      transform: none;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background-color: #333;
+    }
+
+    .demo-title {
+      position: absolute;
+      top: 25px;
+      left: 25px;
+      z-index: 1;
+    }
+
+    h1.map-title {
+      font-size: 18px;
+      margin: 0;
+      color: rgb(180, 180, 190);
+    }
+
+    h3.map-subtitle {
+      font-size: 12px;
+      font-weight: normal;
+      margin-top: 5px;
+      color: rgb(150,150,150);
+    }
+
+    .time-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      width: 80%;
+      height: 80px;
+      max-width: 800px;
+      position: absolute;
+      z-index: 999;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(38, 38, 38, 0.7);
+      border-radius: 8px;
+    }
+
+    .item {
+      width: 20px;
+      height: 20px;
+      background-color: #12bfbf;
+      position: relative;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .item::before,
+    .item::after {
+      content: '';
+      display: block;
+      position: absolute;
+      z-index: -1;
+      top: 50%;
+      transform: translateY(-50%);
+      background-color: #12bfbf;
+      width: 13.3333333333%;
+      height: 2px;
+    }
+
+    .item::before {
+      left: calc(-13.3333333333% - 10px);
+    }
+
+    .item::after {
+      right: calc(-13.3333333333% - 10px);
+    }
+
+    .item:first-child::before {
+      width: 0;
+    }
+
+    .item:last-child::after {
+      width: 0;
+    }
+
+    .item.active {
+      background-color: #12bfbf;
+    }
+
+    .item.active span {
+      background-color: #12bfbf;
+      font-weight: 700;
+    }
+
+    .item span {
+      width: 14px;
+      height: 14px;
+      background-color: #262626;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .item span::after {
+      visibility: visible;
+      position: absolute;
+      left: 50%;
+      content: attr(data-info);
+      top: 25px;
+      transform: translateX(-50%);
+      font-size: 14px;
+      color: #fff;
+      width: 70px;
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .time-container {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        height: auto;
+        margin-top: 15vh;
+      }
+
+      .item {
+        width: 60px;
+        height: 60px;
+        margin: 0 10px 50px;
+      }
+
+      .item::before,
+      .item::after {
+        content: none;
+      }
+
+      .item span {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .item span::after {
+        top: 50%;
+        transform: translate(-50%, -50%);
+        color: #12bfbf;
+      }
+
+      .item.active span::after {
+        color: #fff;
+      }
+    }
+
+    main.main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 6rem auto;
+      max-width: none;
+      width: 100%;
+      padding: 0;
+      text-align: center;
+      transform: translateX(0);
+      transition: transform calc(var(--nav-duration) * 2) var(--ease);
+    }
+    
+    /* 新增搜索框样式 */
+    .finder {
+      border: 1px solid #fff;
+      background-color: #f6f5f0;
+      border-radius: 15px;
+      padding: 8px;
+      box-shadow: 9px 9px 16px rgba(189, 189, 189, 0.6),
+        -9px -9px 16px rgba(255, 255, 255, 0.5);
+    }
+
+    .finder__outer {
+      display: flex;
+      padding: 0;
+      border-radius: 10px;
+      box-shadow: inset 10px 10px 15px -10px #c3c3c3,
+        inset -10px -10px 15px -10px #ffffff;
+    }
+
+    .finder__inner {
+      display: flex;
+      align-items: center;
+      position: relative;
+      flex: 1;
+      height: 60px;
+      padding: 0 1rem;
+    }
+
+    .finder__input {
+      width: 100%;
+      border: none;
+      background-color: transparent;
+      outline: none;
+      font-size: 1.5rem;
+      letter-spacing: 0.75px;
+      height: 100%;
+    }
+
+    .finder__icon {
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      margin-right: 1rem;
+      transition: all 0.2s;
+      box-shadow: inset 0 0 0 25px #292929;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .finder__icon:after,
+    .finder__icon:before {
+      display: block;
+      content: "";
+      position: absolute;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .finder__icon:after {
+      width: 12px;
+      height: 12px;
+      background-color: #292929;
+      border: 4px solid #f6f5f0;
+      top: 50%;
+      position: absolute;
+      transform: translateY(-50%);
+      left: 0px;
+      right: 0;
+      margin: auto;
+      border-radius: 50%;
+    }
+
+    .finder__icon:before {
+      width: 5px;
+      height: 16px;
+      background-color: #f6f5f0;
+      top: 50%;
+      left: 25px;
+      transform: rotateZ(45deg) translate(-50%, 0);
+      transform-origin: 0 0;
+      border-radius: 4px;
+    }
+
+    .finder.active .finder__icon:after {
+      border-width: 12px;
+      background-color: #f6f5f0;
+    }
+
+    .finder.active .finder__icon:before {
+      background-color: #292929;
+      width: 7px;
+      transform: rotateZ(45deg) translate(-50%, 30px);
+    }
+
+    .finder.processing .finder__icon {
+      transform-origin: 50%;
+      animation: spinner 0.3s linear infinite;
+      animation-delay: 0.5s;
+    }
+
+    .finder.active .finder__icon {
+      transform: translateY(-5px);
+    }
+
+    @keyframes spinner {
+      0% {
+        transform: rotateZ(45deg);
+      }
+      100% {
+        transform: rotateZ(405deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 新导航菜单 -->
+  <input id="page-nav-toggle" class="main-navigation-toggle" type="checkbox" />
+  <label for="page-nav-toggle">
+    <svg class="icon--menu-toggle" viewBox="0 0 60 30">
+      <g class="icon-group">
+        <g class="icon--menu">
+          <path d="M 6 0 L 54 0" />
+          <path d="M 6 15 L 54 15" />
+          <path d="M 6 30 L 54 30" />
+        </g>
+        <g class="icon--close">
+          <path d="M 15 0 L 45 30" />
+          <path d="M 15 30 L 45 0" />
+        </g>
+      </g>
+    </svg>
+  </label>
+
+  <nav class="main-navigation">
+    <ul>
+      <li><a href="index.html">中国外交历史</a></li>
+      
+      <li><a href="second.html">里程碑事件</a></li>
+      <li><a href="third.html">文化传播图</a></li>
+      <li><a href="fourth.html">一带一路</a></li>
+    </ul>
+  </nav>
+  
+  <div id="header-container">
+      <header>
+          <h1>建交动态地图</h1>
+      </header>
+  </div>
+
+  <main class="main-content">
+    <!-- 替换搜索框 -->
+    <div class="container" style="position: relative; margin: 10px auto 30px; max-width: 650px; width: 80%;">
+      <form autocomplete="off">
+        <div class="finder">
+          <div class="finder__outer">
+            <div class="finder__inner">
+              <div class="finder__icon"></div>
+              <input class="finder__input" type="text" id="country-search" placeholder="搜索国家名称..." />
+            </div>
+          </div>
+        </div>
+      </form>
+      <div id="search-results" style="position: absolute; width: 100%; max-height: 300px; overflow-y: auto; background: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 8px; display: none; z-index: 1000;"></div>
+    </div>
+    
+    <!-- 地图容器 -->
+    <div id="map-container">
+      <div id="map"></div>
+      
+      <div class="time-container">
+        <div class="item active">
+          <span data-year="50" data-info="50年代"></span>
+        </div>
+        <div class="item">
+          <span data-year="60" data-info="60年代"></span>
+        </div>
+        <div class="item">
+          <span data-year="70" data-info="70年代"></span>
+        </div>
+        <div class="item">
+          <span data-year="80" data-info="80年代"></span>
+        </div>
+        <div class="item">
+          <span data-year="90" data-info="90年代"></span>
+        </div>
+        <div class="item">
+          <span data-year="2000" data-info="2000年后"></span>
+        </div>
+      </div>
+    </div>
+    <p>数据来源：中华人民共和国外交部官方网站</p>
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; width: 100%; clear: both;">
+      <div id="chart-container" style="width: 45%; min-width: 300px; margin: 20px auto; height: 350px;">
+        <canvas id="diplomacyChart"></canvas>
+      </div>
+      <!-- 添加饼图容器 -->
+      <div id="pie-chart-container" style="width: 45%; min-width: 300px; margin: 20px auto; height: 380px; border-radius: 5px; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <canvas id="continentPieChart"></canvas>
+      </div>
+    </div>
+    
+    <!-- 添加全球分布图表容器 -->
+    <div style="width: 100%; margin: 30px auto;">
+      <h3 style="text-align: center; margin-bottom: 15px; font-weight: bold;">全球建交国家分布图</h3>
+      <div id="global-distribution-container" style="width: 90%; height: 450px; margin: 0 auto; border-radius: 8px; padding: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+          <button id="switchViewBtn" style="padding: 5px 10px; background-color: #f0f0f0; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">切换视图</button>
+        </div>
+        <canvas id="globalDistributionChart"></canvas>
+      </div>
+    </div>
+  </main>
+
+  <!-- 高德地图 JS API -->
+  <script src="https://webapi.amap.com/maps?v=2.0&key=b2362819e46ff19e5a69dd90af9a0d3d"></script>
+  <script src="https://webapi.amap.com/loca?v=2.0.0&key=b2362819e46ff19e5a69dd90af9a0d3d"></script>
+  <script>
+    // 初始化地图
+    var map = new AMap.Map('map', {
+      zoom: 3.2,
+      pitch: 32,
+      showLabel: false,
+      viewMode: '3D',
+      center: [59.890102,29.256014],
+      mapStyle: 'amap://styles/45311ae996a8bea0da10ad5151f72979',
+    });
+
+    // 为Canvas添加willReadFrequently属性提高性能
+    map.getContainer().querySelector('canvas').getContext('2d', { willReadFrequently: true });
+
+    // 文字图层
+    var labelLayer = new AMap.LabelsLayer({
+      rejectMapMask: true,
+      collision: true,
+      animation: true,
+    });
+    map.add(labelLayer);
+
+    // 创建 Loca 容器
+    var loca = new Loca.Container({ map });
+
+    var linkLayer = new Loca.LinkLayer({
+      zIndex: 20,
+      opacity: 1,
+      visible: true,
+      zooms: [2, 22],
+    });
+
+    var scatterLayer1 = new Loca.ScatterLayer({
+      zIndex: 10,
+      opacity: 1,
+      visible: true,
+      zooms: [2, 22],
+    });
+    var scatterLayer2 = new Loca.ScatterLayer({
+      zIndex: 10,
+      opacity: 0.8,
+      visible: true,
+      zooms: [2, 22],
+    });
+    var scatterLayer3 = new Loca.ScatterLayer({
+      zIndex: 10,
+      opacity: 0.8,
+      visible: true,
+      zooms: [2, 22],
+    });
+    var centerPoint = new Loca.GeoJSONSource({
+      data: {
+        'type': 'FeatureCollection',
+        'features': [
+          {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Point',
+              'coordinates': [116.39, 39.9],
+            },
+          },
+        ],
+      },
+    });
+    scatterLayer3.setSource(centerPoint);
+    scatterLayer3.setStyle({
+      size: [300000, 300000],
+      unit: 'meter',
+      texture: 'https://a.amap.com/Loca/static/static/center-point.png',
+    });
+    loca.add(scatterLayer3);
+
+    var lineGeoMap;
+    var scatterGeoMap;
+
+    // 定义 GeoJSON 数据过滤函数
+    var filterGeoJSON = (json, type) => {
+      var newJSON = {
+        type: 'FeatureCollection',
+        features: json.features.filter((item) => item.properties.type === type)
+      };
+      return new Loca.GeoJSONSource({ data: newJSON });
+    };
+
+    // 创建信息窗口（全局唯一）
+    if (!window.infoWindow) {
+      window.infoWindow = new AMap.InfoWindow({
+        offset: new AMap.Pixel(0, -30),
+        isCustom: true,  // 使用自定义窗体
+        content: '<div></div>',  // 初始为空内容
+        autoMove: true,  // 自动调整窗体到视野内
+        anchor: 'bottom-center'  // 锚点位置
+      });
+    }
+
+    // 设置文字图层，同时为每个标签添加鼠标悬停事件，显示国家名及建交时间
+    var setLabelsLayer = (data) => {
+      labelLayer.clear();
+      data.features.forEach((item) => {
+        var labelsMarker = new AMap.LabelMarker({
+          name: item.properties.flagName,
+          position: item.geometry.coordinates,
+          zooms: [2, 22],
+          opacity: 1,
+          zIndex: 10,
+          text: {
+            content: item.properties.country,
+            direction: 'bottom',
+            offset: [0, -5],
+            style: {
+              fontSize: 13,
+              fontWeight: 'normal',
+              fillColor: '#000'
+            },
+          },
+        });
+        // 修改鼠标悬停时显示信息窗口的内容：添加圆角等样式
+        labelsMarker.on('mouseover', (function (country, time) {
+          return function (e) {
+            // 直接设置自定义HTML，避免默认InfoWindow样式
+            window.infoWindow.setContent(
+              '<div style="transform: translateY(-10px); border-radius: 12px; padding: 8px; background-color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.2); font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #333; border: none;">' +
+              '<strong>国家：</strong>' + country + '<br><strong>建交时间：</strong>' + (time || "未知") +
+              '</div>'
+            );
+            window.infoWindow.open(map, e.target.getPosition());
+          }
+        })(item.properties.country, item.properties.time));
+        
+        labelsMarker.on('mouseout', function() {
+          window.infoWindow.close();
+        });
+        labelLayer.add(labelsMarker);
+      });
+      // 特殊添加中国标签
+      labelLayer.add(
+        new AMap.LabelMarker({
+          name: 'china',
+          position: [116.39, 39.9],
+          zooms: [2, 22],
+          opacity: 1,
+          zIndex: 10,
+          rank: 100,
+          text: {
+            content: '中国',
+            direction: 'bottom',
+            offset: [0, -5],
+            style: {
+              fontSize: 13,
+              fontWeight: 'normal',
+              fillColor: '#000'
+            },
+          },
+        })
+      );
+    };
+
+    // 加载散点和连线数据，并初始化图层
+    // 使用数据文件 jianjiao.json
+    fetch('data/jianjiao.json')
+      .then((res) => res.json())
+      .then((data) => {
+        scatterGeoMap = data;
+        setLabelsLayer(scatterGeoMap[50]);
+        var source1 = filterGeoJSON(scatterGeoMap[50], 0);
+        var source2 = filterGeoJSON(scatterGeoMap[50], 1);
+        scatterLayer1.setSource(source1);
+        scatterLayer2.setSource(source2);
+        scatterLayer1.setStyle({
+          size: [500000, 500000],
+          unit: 'miter',
+          animate: true,
+          duration: 1000,
+          texture: 'https://a.amap.com/Loca/static/static/green.png',
+        });
+        scatterLayer2.setStyle({
+          size: [500000, 500000],
+          unit: 'miter',
+          animate: true,
+          duration: 1000,
+          texture: 'https://a.amap.com/Loca/static/static/orange.png',
+        });
+        loca.add(scatterLayer1);
+        loca.add(scatterLayer2);
+        loca.animate.start();
+        
+        // 初始化国家搜索功能
+        initCountrySearch(data);
+        
+        // 初始化饼图，默认显示50年代数据
+        updatePieChart('50');
+      });
+
+    // 连线数据保持不变
+    fetch('https://a.amap.com/Loca/static/static/diplomacy-line.json')
+      .then((res) => res.json())
+      .then((data) => {
+        lineGeoMap = Object.entries(data).reduce((accu, curr) => {
+          var [key, geo] = curr;
+          accu[key] = new Loca.GeoJSONSource({ data: geo });
+          return accu;
+        }, {});
+        linkLayer.setSource(lineGeoMap[50]);
+        linkLayer.setStyle({
+          lineColors: function (index, item) {
+            return item.link.properties.type === 0 ? ['#25CDEA', '#12BFBF'] : ['#FFD87B', '#FF4F00'];
+          },
+          height: function (index, item) {
+            return item.distance / 3;
+          },
+          smoothSteps: function (index, item) {
+            return 200;
+          },
+        });
+        loca.add(linkLayer);
+      });
+
+    // 点击不同年代按钮切换数据
+    var items = document.querySelectorAll('.item');
+    for (var i = 0; i < items.length; i++) {
+      (function (j) {
+        items[j].onclick = () => {
+          var element = items[j];
+          var key = element.children[0].dataset.year;
+          document.querySelector('div.item.active').classList.remove('active');
+          element.classList.add('active');
+          linkLayer.setSource(lineGeoMap[key]);
+          setLabelsLayer(scatterGeoMap[key]);
+          scatterLayer1.setSource(filterGeoJSON(scatterGeoMap[key], 0));
+          scatterLayer2.setSource(filterGeoJSON(scatterGeoMap[key], 1));
+          
+          // 更新饼图
+          updatePieChart(key);
+        };
+      })(i);
+    }
+  </script>
+  <script>
+    // 定义国家所属大洲的映射关系
+    const countryContinentMap = {
+      // 亚洲国家
+      "中国": "亚洲", "朝鲜": "亚洲", "蒙古": "亚洲", "越南": "亚洲", "印度": "亚洲", 
+      "印度尼西亚": "亚洲", "缅甸": "亚洲", "巴基斯坦": "亚洲", "阿富汗": "亚洲", 
+      "尼泊尔": "亚洲", "叙利亚": "亚洲", "也门": "亚洲", "斯里兰卡": "亚洲", 
+      "柬埔寨": "亚洲", "伊拉克": "亚洲", "老挝": "亚洲", "日本": "亚洲", 
+      "伊朗": "亚洲", "科威特": "亚洲", "黎巴嫩": "亚洲", "土耳其": "亚洲", 
+      "阿拉伯联合酋长国": "亚洲", "以色列": "亚洲", "哈萨克斯坦": "亚洲", 
+      "吉尔吉斯斯坦": "亚洲", "韩国": "亚洲", "塔吉克斯坦": "亚洲", 
+      "土库曼斯坦": "亚洲", "乌兹别克斯坦": "亚洲", "马来西亚": "亚洲", 
+      "文莱": "亚洲", "新加坡": "亚洲", "菲律宾": "亚洲", "泰国": "亚洲",
+      "马尔代夫": "亚洲", "东帝汶": "亚洲", "亚美尼亚": "亚洲", "阿塞拜疆": "亚洲",
+      "格鲁吉亚": "亚洲", "约旦": "亚洲", "卡塔尔": "亚洲", "巴林": "亚洲",
+      "沙特阿拉伯": "亚洲", "阿曼": "亚洲", "巴勒斯坦": "亚洲", "孟加拉国": "亚洲",
+      "基里巴斯": "大洋洲",
+
+      // 欧洲国家
+      "阿尔巴尼亚": "欧洲", "保加利亚": "欧洲", "捷克": "欧洲", "匈牙利": "欧洲", 
+      "波兰": "欧洲", "罗马尼亚": "欧洲", "俄罗斯": "欧洲", "斯洛伐克": "欧洲", 
+      "丹麦": "欧洲", "芬兰": "欧洲", "列支敦士登": "欧洲", "瑞典": "欧洲", 
+      "瑞士": "欧洲", "挪威": "欧洲", "塞尔维亚": "欧洲", "法国": "欧洲", 
+      "意大利": "欧洲", "奥地利": "欧洲", "比利时": "欧洲", "塞浦路斯": "欧洲", 
+      "冰岛": "欧洲", "圣马力诺": "欧洲", "英国": "欧洲", "荷兰": "欧洲", 
+      "德国": "欧洲", "希腊": "欧洲", "卢森堡": "欧洲", "马耳他": "欧洲", 
+      "西班牙": "欧洲", "爱尔兰": "欧洲", "葡萄牙": "欧洲", "爱沙尼亚": "欧洲", 
+      "拉脱维亚": "欧洲", "立陶宛": "欧洲", "白俄罗斯": "欧洲", "克罗地亚": "欧洲", 
+      "摩尔多瓦": "欧洲", "斯洛文尼亚": "欧洲", "乌克兰": "欧洲", 
+      "北马其顿": "欧洲", "安道尔": "欧洲", "波斯尼亚和黑塞哥维那": "欧洲", 
+      "摩纳哥": "欧洲", "黑山": "欧洲",
+
+      // 非洲国家
+      "埃及": "非洲", "阿尔及利亚": "非洲", "摩洛哥": "非洲", "几内亚": "非洲", 
+      "苏丹": "非洲", "加纳": "非洲", "马里": "非洲", "索马里": "非洲", 
+      "刚果（金）": "非洲", "乌干达": "非洲", "布隆迪": "非洲", "肯尼亚": "非洲", 
+      "贝宁": "非洲", "中非": "非洲", "刚果（布）": "非洲", "坦桑尼亚": "非洲", 
+      "突尼斯": "非洲", "赞比亚": "非洲", "毛里塔尼亚": "非洲", "赤道几内亚": "非洲", 
+      "埃塞俄比亚": "非洲", "喀麦隆": "非洲", "尼日利亚": "非洲", "卢旺达": "非洲", 
+      "塞内加尔": "非洲", "塞拉利昂": "非洲", "乍得": "非洲", "马达加斯加": "非洲", 
+      "毛里求斯": "非洲", "多哥": "非洲", "布基纳法索": "非洲", "加蓬": "非洲", 
+      "冈比亚": "非洲", "几内亚比绍": "非洲", "尼日尔": "非洲", "利比里亚": "非洲", 
+      "利比亚": "非洲", "吉布提": "非洲", "津巴布韦": "非洲", "安哥拉": "非洲", 
+      "科特迪瓦": "非洲", "莱索托": "非洲", "博茨瓦纳": "非洲", "科摩罗": "非洲", 
+      "莫桑比克": "非洲", "圣多美和普林西比": "非洲", "佛得角": "非洲", 
+      "塞舌尔": "非洲", "纳米比亚": "非洲", "厄立特里亚": "非洲", "南非": "非洲",
+      "马拉维": "非洲", "南苏丹": "非洲",
+
+      // 北美洲国家
+      "古巴": "北美洲", "加拿大": "北美洲", "美国": "北美洲", "安提瓜和巴布达": "北美洲", 
+      "格林纳达": "北美洲", "巴哈马": "北美洲", "多米尼克": "北美洲", 
+      "多米尼加": "北美洲", "特立尼达和多巴哥": "北美洲", "牙买加": "北美洲", 
+      "墨西哥": "北美洲", "巴拿马": "北美洲", "哥斯达黎加": "北美洲", 
+      "萨尔瓦多": "北美洲",
+
+      // 南美洲国家
+      "智利": "南美洲", "秘鲁": "南美洲", "阿根廷": "南美洲", "圭亚那": "南美洲", 
+      "巴西": "南美洲", "委内瑞拉": "南美洲", "苏里南": "南美洲", 
+      "哥伦比亚": "南美洲", "厄瓜多尔": "南美洲", "玻利维亚": "南美洲", 
+      "乌拉圭": "南美洲",
+
+      // 大洋洲国家
+      "澳大利亚": "大洋洲", "新西兰": "大洋洲", "斐济": "大洋洲", "萨摩亚": "大洋洲", 
+      "巴布亚新几内亚": "大洋洲", "瓦努阿图": "大洋洲", "密克罗尼西亚": "大洋洲", 
+      "库克群岛": "大洋洲", "汤加": "大洋洲", "纽埃": "大洋洲", "所罗门群岛": "大洋洲"
+    };
+
+    // 颜色映射
+    const continentColors = {
+      "亚洲": "rgba(255, 99, 132, 0.8)",
+      "欧洲": "rgba(54, 162, 235, 0.8)",
+      "非洲": "rgba(255, 206, 86, 0.8)",
+      "北美洲": "rgba(75, 192, 192, 0.8)",
+      "南美洲": "rgba(153, 102, 255, 0.8)",
+      "大洋洲": "rgba(255, 159, 64, 0.8)",
+      "其他": "rgba(199, 199, 199, 0.8)"
+    };
+
+    // 饼图实例
+    let pieChart;
+
+    // 计算不同大洲的国家比例
+    function calculateContinentData(features) {
+      const continentCount = {
+        "亚洲": 0,
+        "欧洲": 0,
+        "非洲": 0,
+        "北美洲": 0,
+        "南美洲": 0,
+        "大洋洲": 0,
+        "其他": 0
+      };
+      
+      features.forEach(feature => {
+        const country = feature.properties.country;
+        const continent = countryContinentMap[country] || "其他";
+        continentCount[continent]++;
+      });
+      
+      return {
+        labels: Object.keys(continentCount).filter(key => continentCount[key] > 0),
+        data: Object.keys(continentCount).filter(key => continentCount[key] > 0).map(key => continentCount[key]),
+        backgroundColor: Object.keys(continentCount).filter(key => continentCount[key] > 0).map(key => continentColors[key])
+      };
+    }
+
+    // 更新饼图
+    function updatePieChart(decade) {
+      const features = scatterGeoMap[decade].features;
+      const continentData = calculateContinentData(features);
+      
+      // 创建颜色数组
+      const backgroundColor = continentData.labels.map((label) => {
+        return continentColors[label];
+      });
+      
+      // 创建悬停颜色数组
+      const hoverBackgroundColor = continentData.labels.map((label) => {
+        const baseColor = continentColors[label];
+        // 提取RGB颜色值
+        const rgbaMatch = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+        if (rgbaMatch) {
+          const r = parseInt(rgbaMatch[1]);
+          const g = parseInt(rgbaMatch[2]);
+          const b = parseInt(rgbaMatch[3]);
+          
+          // 创建增亮版本用于悬停效果
+          return `rgba(${Math.min(255, r+30)}, ${Math.min(255, g+30)}, ${Math.min(255, b+30)}, 0.9)`;
+        }
+        return baseColor;
+      });
+      
+      // 如果饼图已经存在，销毁它
+      if (pieChart) {
+        pieChart.destroy();
+      }
+      
+      // 创建新的饼图，模拟南丁格尔玫瑰图效果
+      const ctx = document.getElementById('continentPieChart').getContext('2d');
+      
+      pieChart = new Chart(ctx, {
+        type: 'doughnut', // 使用空心圆形
+        data: {
+          labels: continentData.labels,
+          datasets: [{
+            data: continentData.data,
+            backgroundColor: backgroundColor,
+            hoverBackgroundColor: hoverBackgroundColor,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverBorderWidth: 0,
+            offset: 10, // 增加分离效果
+            spacing: 2, // 扇区之间的间距
+            weight: 1, // 使所有扇区具有相同权重
+            borderRadius: 6, // 圆角边缘
+            hoverOffset: 15 // 鼠标悬停时扇区偏移量
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '45%', // 中心孔洞大小
+          radius: '90%', // 整体饼图半径
+          plugins: {
+            title: {
+              display: true,
+              text: (decade === '2000' ? '2000年后' : decade + '年代') + '各大洲建交国家比例',
+              font: {
+                size: 16,
+                weight: 'bold'
+              },
+              padding: {
+                top: 10,
+                bottom: 20
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 15,
+                padding: 15,
+                usePointStyle: true,
+                pointStyle: 'circle',
+                font: {
+                  size: 12
+                }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value}个国家 (${percentage}%)`;
+                }
+              },
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#333',
+              bodyColor: '#333',
+              titleFont: {
+                weight: 'bold'
+              },
+              bodyFont: {
+                size: 13
+              },
+              padding: 10,
+              cornerRadius: 6,
+              displayColors: true,
+              boxWidth: 10,
+              boxHeight: 10,
+              usePointStyle: true
+            },
+            // 添加工具栏
+            customToolbox: {
+              position: 'top',
+              align: 'end',
+              items: [
+                {
+                  name: 'refresh',
+                  icon: '⟳',
+                  onClick: () => updatePieChart(decade)
+                }
+              ]
+            }
+          },
+          elements: {
+            arc: {
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }
+          },
+          // 添加动画效果
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1000,
+            easing: 'easeOutCirc'
+          },
+          // 点击事件处理
+          onClick: (e, elements) => {
+            if (elements && elements.length > 0) {
+              const index = elements[0].index;
+              // 如果需要，可以在这里添加点击扇区的交互
+              console.log('点击了区域: ' + continentData.labels[index]);
+            }
+          }
+        }
+      });
+      
+      // 给容器添加标题
+      const container = document.getElementById('pie-chart-container');
+      if (container && !container.querySelector('.chart-subtitle')) {
+        const subtitle = document.createElement('div');
+        subtitle.className = 'chart-subtitle';
+        subtitle.style.textAlign = 'center';
+        subtitle.style.fontSize = '12px';
+        subtitle.style.color = '#666';
+        subtitle.style.marginTop = '5px';
+        subtitle.style.fontStyle = 'italic';
+        subtitle.textContent = '各大洲建交国家分布';
+        container.appendChild(subtitle);
+      }
+    }
+
+    // 使用 fetch 获取线上折线图数据
+    fetch('https://a.amap.com/Loca/static/static/diplomacy-line.json')
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('加载 JSON 数据失败！');
+        }
+        return res.json();
+      })
+      .then(data => {
+        // 根据预设的顺序排列各个年代
+        const order = ["50", "60", "70", "80", "90", "2000"];
+        const decades = order.map(k => k === "2000" ? "2000年后" : k + "年代");
+        const counts = order.map(k => data[k] ? data[k].features.length : 0);
+  
+        // 初始化 Chart.js 折线图，具有动画效果
+        const ctx = document.getElementById('diplomacyChart').getContext('2d');
+        const diplomacyChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: decades,
+            datasets: [{
+              label: '建交国家数量',
+              data: counts,
+              // 使用深蓝色调的折线颜色
+              borderColor: 'rgba(0, 0, 139, 1)',
+              backgroundColor: 'rgba(0, 0, 139, 0.2)',
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 2000
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: '数量'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: '年代'
+                }
+              }
+            }
+          }
+        });
+        
+        // 准备全球分布图表数据
+        createGlobalDistributionChart(data);
+      })
+      .catch(error => {
+        console.error('Error fetching chart JSON data:', error);
+      });
+      
+    // 创建全球分布图表
+    function createGlobalDistributionChart(data) {
+      // 合并所有年代的数据，获取最终的建交国家列表
+      let allCountries = [];
+      for (const decade in data) {
+        if (data[decade] && data[decade].features) {
+          data[decade].features.forEach(feature => {
+            if (!allCountries.some(c => c.country === feature.properties.country)) {
+              allCountries.push({
+                country: feature.properties.country,
+                time: feature.properties.time
+              });
+            }
+          });
+        }
+      }
+      
+      // 按大洲组织数据
+      const continentData = {};
+      allCountries.forEach(country => {
+        const continent = countryContinentMap[country.country] || "其他";
+        if (!continentData[continent]) {
+          continentData[continent] = {
+            name: continent,
+            value: 0,
+            children: []
+          };
+        }
+        continentData[continent].value++;
+        continentData[continent].children.push({
+          name: country.country,
+          value: 1,
+          time: country.time
+        });
+      });
+      
+      // 转换为图表所需格式
+      const chartData = Object.values(continentData);
+      
+      // 创建不同视图的配置
+      let currentView = 'sunburst';
+      let globalChart;
+      
+      // 初始化旭日图
+      renderSunburstChart(chartData);
+      
+      // 添加切换视图按钮事件监听
+      document.getElementById('switchViewBtn').addEventListener('click', function() {
+        if (globalChart) globalChart.destroy();
+        if (currentView === 'sunburst') {
+          currentView = 'treemap';
+          renderTreemapChart(chartData);
+          this.textContent = '切换为旭日图';
+        } else {
+          currentView = 'sunburst';
+          renderSunburstChart(chartData);
+          this.textContent = '切换为矩形树图';
+        }
+      });
+      
+      // 渲染旭日图（使用嵌套环形图模拟）
+      function renderSunburstChart(data) {
+        const ctx = document.getElementById('globalDistributionChart').getContext('2d');
+        
+        // 准备父级数据（大洲）
+        const parentData = data.map(d => d.value);
+        const parentLabels = data.map(d => d.name);
+        const parentColors = parentLabels.map(label => continentColors[label] || 'rgba(150, 150, 150, 0.8)');
+        
+        // 准备子级数据（国家）
+        const childrenDatasets = [];
+        let startAngle = 0;
+        
+        data.forEach((continent, index) => {
+          const continentValue = continent.value;
+          const continentPercentage = continentValue / parentData.reduce((a, b) => a + b, 0);
+          const angleRange = continentPercentage * 360;
+          
+          // 为每个大洲创建一个包含所有国家的数据集
+          const countryValues = continent.children.map(c => c.value);
+          const countryLabels = continent.children.map(c => c.name);
+          
+          // 使用相似但轻微不同的颜色
+          const baseColor = continentColors[continent.name] || 'rgba(150, 150, 150, 0.8)';
+          const rgbaMatch = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+          let r, g, b;
+          if (rgbaMatch) {
+            r = parseInt(rgbaMatch[1]);
+            g = parseInt(rgbaMatch[2]);
+            b = parseInt(rgbaMatch[3]);
+          } else {
+            r = g = b = 150;
+          }
+          
+          const countryColors = countryLabels.map((_, i) => {
+            // 在基础颜色上做轻微变化
+            const variation = 30 * (i / countryLabels.length) - 15;
+            return `rgba(${Math.min(255, Math.max(0, r + variation))}, ${Math.min(255, Math.max(0, g + variation))}, ${Math.min(255, Math.max(0, b + variation))}, 0.85)`;
+          });
+          
+          childrenDatasets.push({
+            data: countryValues,
+            backgroundColor: countryColors,
+            labels: countryLabels,
+            borderColor: '#fff',
+            borderWidth: 1,
+            weight: continentPercentage
+          });
+        });
+        
+        // 创建嵌套环形图
+        globalChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: parentLabels,
+            datasets: [
+              {
+                data: parentData,
+                backgroundColor: parentColors,
+                borderColor: '#fff',
+                borderWidth: 2,
+                weight: 0.4
+              },
+              ...childrenDatasets
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '30%',
+            layout: {
+              padding: 20
+            },
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  generateLabels: function(chart) {
+                    // 只显示父级（大洲）图例
+                    const data = chart.data;
+                    if (data.labels.length && data.datasets.length) {
+                      return data.labels.map(function(label, i) {
+                        const meta = chart.getDatasetMeta(0);
+                        const style = meta.controller.getStyle(i);
+                        
+                        return {
+                          text: label,
+                          fillStyle: style.backgroundColor,
+                          strokeStyle: style.borderColor,
+                          lineWidth: style.borderWidth,
+                          hidden: !chart.getDataVisibility(i),
+                          index: i
+                        };
+                      });
+                    }
+                    return [];
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const datasetIndex = context.datasetIndex;
+                    const index = context.dataIndex;
+                    
+                    let label = '';
+                    if (datasetIndex === 0) {
+                      // 父级数据（大洲）
+                      label = parentLabels[index];
+                      const value = parentData[index];
+                      const percentage = Math.round((value / parentData.reduce((a, b) => a + b, 0)) * 100);
+                      return `${label}: ${value}个国家 (${percentage}%)`;
+                    } else {
+                      // 子级数据（国家）
+                      const dataset = childrenDatasets[datasetIndex - 1];
+                      if (dataset && dataset.labels) {
+                        label = dataset.labels[index];
+                        return `${label}`;
+                      }
+                    }
+                    return label;
+                  }
+                }
+              },
+              title: {
+                display: true,
+                text: '全球建交国家分布（旭日图）',
+                font: {
+                  size: 16,
+                  weight: 'bold'
+                },
+                padding: {
+                  top: 10,
+                  bottom: 30
+                }
+              }
+            },
+            animation: {
+              animateRotate: true,
+              animateScale: true,
+              duration: 1000
+            }
+          }
+        });
+      }
+      
+      // 渲染矩形树图（使用多个饼图模拟）
+      function renderTreemapChart(data) {
+        const ctx = document.getElementById('globalDistributionChart').getContext('2d');
+        
+        // 对数据进行排序，使图表更美观
+        data.sort((a, b) => b.value - a.value);
+        
+        // 创建矩形树图样式的图表
+        globalChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: data.map(d => d.name),
+            datasets: [{
+              data: data.map(d => d.value),
+              backgroundColor: data.map(d => continentColors[d.name] || 'rgba(150, 150, 150, 0.8)'),
+              borderColor: '#fff',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+              padding: 20
+            },
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  boxWidth: 15,
+                  font: {
+                    size: 12
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw;
+                    const percentage = Math.round((value / data.map(d => d.value).reduce((a, b) => a + b, 0)) * 100);
+                    const countryCount = data[context.dataIndex].children.length;
+                    return [`${label}: ${value}个国家 (${percentage}%)`, `包含${countryCount}个国家`];
+                  },
+                  afterLabel: function(context) {
+                    const countries = data[context.dataIndex].children;
+                    // 只显示前5个国家，其余用省略号表示
+                    if (countries.length > 5) {
+                      return countries.slice(0, 5).map(c => c.name).join(', ') + '...';
+                    } else {
+                      return countries.map(c => c.name).join(', ');
+                    }
+                  }
+                }
+              },
+              title: {
+                display: true,
+                text: '全球建交国家分布（矩形树图）',
+                font: {
+                  size: 16,
+                  weight: 'bold'
+                },
+                padding: {
+                  top: 10,
+                  bottom: 30
+                }
+              }
+            },
+            animation: {
+              duration: 1000
+            }
+          }
+        });
+      }
+    }
+
+    // 初始化国家搜索功能
+    function initCountrySearch(data) {
+      const searchInput = document.getElementById('country-search');
+      const resultsContainer = document.getElementById('search-results');
+      const finder = document.querySelector(".finder");
+      const form = document.querySelector("form");
+      
+      // 构建所有国家数据，包含年代信息
+      const allCountriesWithDecade = [];
+      for (const decade in data) {
+        if (data[decade] && data[decade].features) {
+          data[decade].features.forEach(feature => {
+            if (feature.properties && feature.properties.country) {
+              // 检查是否已存在
+              const existingIndex = allCountriesWithDecade.findIndex(c => c.country === feature.properties.country);
+              if (existingIndex === -1) {
+                // 添加新国家
+                allCountriesWithDecade.push({
+                  country: feature.properties.country,
+                  time: feature.properties.time,
+                  decade: decade,
+                  coordinates: feature.geometry.coordinates,
+                  type: feature.properties.type
+                });
+              }
+            }
+          });
+        }
+      }
+      
+      // 新增搜索框动画效果
+      searchInput.addEventListener("focus", () => {
+        finder.classList.add("active");
+      });
+
+      searchInput.addEventListener("blur", () => {
+        if (searchInput.value.length === 0) {
+          finder.classList.remove("active");
+        }
+      });
+
+      form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        finder.classList.add("processing");
+        finder.classList.remove("active");
+        searchInput.disabled = true;
+        
+        // 处理搜索表单提交 - 点击第一个结果
+        const firstResult = resultsContainer.querySelector('.search-result-item');
+        if (firstResult) {
+          firstResult.click();
+        }
+        
+        setTimeout(() => {
+          finder.classList.remove("processing");
+          searchInput.disabled = false;
+          if (searchInput.value.length > 0) {
+            finder.classList.add("active");
+          }
+        }, 1000);
+      });
+      
+      // 输入框键入事件
+      searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        
+        if (query.length < 1) {
+          resultsContainer.style.display = 'none';
+          return;
+        }
+        
+        // 查找匹配的国家
+        const matchedCountries = allCountriesWithDecade.filter(country => 
+          country.country.includes(query)
+        );
+        
+        // 显示结果
+        if (matchedCountries.length > 0) {
+          resultsContainer.innerHTML = '';
+          matchedCountries.forEach(country => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'search-result-item';
+            resultItem.style.padding = '10px 15px';
+            resultItem.style.borderBottom = '1px solid #eee';
+            resultItem.style.cursor = 'pointer';
+            resultItem.style.transition = 'background 0.2s';
+            
+            // 高亮匹配部分
+            const highlightedName = country.country.replace(
+              new RegExp(query, 'g'),
+              `<span style="background-color: #ffeb3b;">${query}</span>`
+            );
+            
+            resultItem.innerHTML = `
+              <div style="font-weight: bold;">${highlightedName}</div>
+              <div style="font-size: 12px; color: #666;">建交时间: ${country.time || '未知'}</div>
+            `;
+            
+            // 鼠标悬停效果
+            resultItem.addEventListener('mouseover', function() {
+              this.style.backgroundColor = '#f5f5f5';
+            });
+            
+            resultItem.addEventListener('mouseout', function() {
+              this.style.backgroundColor = 'transparent';
+            });
+            
+            // 点击事件 - 跳转到对应年代和位置
+            resultItem.addEventListener('click', function() {
+              // 选择对应年代按钮
+              const decadeButtons = document.querySelectorAll('.item');
+              const targetButton = Array.from(decadeButtons).find(
+                button => button.children[0].dataset.year === country.decade
+              );
+              
+              if (targetButton) {
+                // 切换到对应年代
+                document.querySelector('div.item.active').classList.remove('active');
+                targetButton.classList.add('active');
+                
+                // 更新图层数据
+                const key = country.decade;
+                linkLayer.setSource(lineGeoMap[key]);
+                setLabelsLayer(scatterGeoMap[key]);
+                scatterLayer1.setSource(filterGeoJSON(scatterGeoMap[key], 0));
+                scatterLayer2.setSource(filterGeoJSON(scatterGeoMap[key], 1));
+                
+                // 移动到国家位置
+                map.setZoomAndCenter(4, country.coordinates, true);
+                
+                // 显示国家信息窗口
+                const content = `<div style="border-radius: 12px; padding: 8px; background-color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,0.2); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; color: #333; border: none;">
+                  <strong>国家：</strong>${country.country}<br>
+                  <strong>建交时间：</strong>${country.time || "未知"}
+                </div>`;
+                window.infoWindow.setContent(content);
+                window.infoWindow.open(map, country.coordinates);
+                
+                // 高亮显示该国家的建交线路
+                highlightCountryRelations(country.country, key);
+                
+                // 清空搜索框和结果
+                searchInput.value = '';
+                resultsContainer.style.display = 'none';
+                finder.classList.remove("active");
+              }
+            });
+            
+            resultsContainer.appendChild(resultItem);
+          });
+          
+          resultsContainer.style.display = 'block';
+        } else {
+          resultsContainer.innerHTML = '<div style="padding: 10px 15px; color: #666;">没有找到匹配的国家</div>';
+          resultsContainer.style.display = 'block';
+        }
+      });
+      
+      // 点击其他区域关闭搜索结果
+      document.addEventListener('click', function(e) {
+        if (!resultsContainer.contains(e.target) && e.target !== searchInput) {
+          resultsContainer.style.display = 'none';
+        }
+      });
+      
+      // 处理回车键
+      searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          const firstResult = resultsContainer.querySelector('.search-result-item');
+          if (firstResult) {
+            firstResult.click();
+          }
+        }
+      });
+    }
+
+    // 高亮显示特定国家的建交线路
+    function highlightCountryRelations(countryName, decade) {
+      // 首先重置所有线条样式
+      resetAllRelationsStyle();
+      
+      // 获取当前年代的所有线路数据
+      const lineFeatures = lineGeoMap[decade].getFeatures();
+      
+      // 遍历所有线路，找出与目标国家相关的线路
+      lineFeatures.forEach(feature => {
+        const props = feature.getProperties();
+        if (props.fromCountry === countryName || props.toCountry === countryName) {
+          // 高亮显示相关线路
+          feature.setStyle(new AMap.LineStyle({
+            strokeColor: '#FF4500',  // 鲜明的橙红色
+            strokeWidth: 3.5,        // 增加线宽
+            strokeOpacity: 0.9,      // 增加不透明度
+            strokeDasharray: [5, 5], // 添加虚线效果
+            lineJoin: 'round',
+            lineCap: 'round'
+          }));
+        }
+      });
+      
+      // 同时高亮显示起点和终点标记
+      const scatterFeatures = scatterGeoMap[decade].getFeatures();
+      scatterFeatures.forEach(feature => {
+        const props = feature.getProperties();
+        if (props.country === countryName) {
+          // 高亮显示国家点标记
+          const originalStyle = feature.getStyle();
+          const highlightStyle = new AMap.PointStyle({
+            content: originalStyle.getContent(),
+            anchor: originalStyle.getAnchor(),
+            offset: originalStyle.getOffset(),
+            size: [originalStyle.getSize()[0] * 1.3, originalStyle.getSize()[1] * 1.3], // 放大图标
+            zIndex: 999 // 确保显示在最上层
+          });
+          feature.setStyle(highlightStyle);
+        }
+      });
+    }
+    
+    // 重置所有线路的样式为默认
+    function resetAllRelationsStyle() {
+      // 遍历所有年代
+      Object.keys(lineGeoMap).forEach(decade => {
+        const features = lineGeoMap[decade].getFeatures();
+        features.forEach(feature => {
+          // 恢复默认样式
+          const props = feature.getProperties();
+          const defaultStyle = new AMap.LineStyle({
+            strokeColor: props.type === 0 ? '#4CAF50' : '#2196F3',
+            strokeWidth: 2,
+            strokeOpacity: 0.8,
+            lineJoin: 'round',
+            lineCap: 'round'
+          });
+          feature.setStyle(defaultStyle);
+        });
+      });
+      
+      // 恢复所有点标记的默认大小
+      Object.keys(scatterGeoMap).forEach(decade => {
+        const features = scatterGeoMap[decade].getFeatures();
+        features.forEach(feature => {
+          const props = feature.getProperties();
+          const defaultStyle = new AMap.PointStyle({
+            content: `<div class="point type-${props.type || 0}"></div>`,
+            anchor: 'center',
+            offset: [0, 0],
+            size: [12, 12],
+            zIndex: props.type === 0 ? 110 : 100
+          });
+          feature.setStyle(defaultStyle);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 添加favicon避免404错误 -->
+  <link rel="icon" href="data:,">
+  <title>文化传播图</title>
+  <link href="https://fonts.googleapis.com/css?family=Merriweather:900&display=swap" rel="stylesheet">
+  <!-- 添加Edge浏览器兼容性meta标签 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!-- 添加高德地图API脚本，请替换YOUR_AMAP_KEY为你的key -->
+  <script src="https://webapi.amap.com/maps?v=1.4.15&key=b2362819e46ff19e5a69dd90af9a0d3d"></script>
+  <!-- 新增 ECharts 库 -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+  <!-- 新增 jQuery 库 (ECharts 示例中常用) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    :root {
+      --color-primary: #002626;
+      --color-secondary: #F0F7EE;
+      --duration: 1s;
+      --nav-duration: calc(var(--duration) / 4);
+      --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
+      --space: 1rem;
+      --font-primary: 'Helvetica', sans-serif;
+      --font-heading: 'Merriweather', serif;
+      --font-size: 1.125rem;
+      --line-height: 1.5;
+      --backgroundColor: rgba(246, 241, 209);
+      --colorShadeA: rgb(106, 163, 137);
+      --colorShadeB: rgb(121, 186, 156);
+      --colorShadeC: rgb(150, 232, 195);
+      --colorShadeD: rgb(187, 232, 211);
+      --colorShadeE: rgb(205, 255, 232);
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      background-image: url('img/14.png');
+      background-size: cover;
+      background-attachment: fixed;
+      background-position: center;
+      margin: 0;
+      padding: 0;
+      padding-bottom: 2rem; /* Add padding to body */
+    }
+    /* 通用标头样式 */
+    #header-container {
+      background: linear-gradient(135deg, #ecf6ff, #8dbeeb);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      width: 96%;
+      padding: 20px 30px; /* Adjusted padding */
+      text-align: center;
+      position: relative;
+      margin: 1rem auto; /* Adjusted top/bottom margin */
+      display: flex; /* Use flexbox */
+      align-items: center; /* Center items vertically */
+      justify-content: center; /* Center items horizontally */
+    }
+    header {
+      position: relative;
+      display: flex; /* Make header content flex */
+      align-items: center; /* Align logo and title */
+      width: 100%; /* Ensure header takes full width */
+      justify-content: center; /* Center content horizontally */
+    }
+    header h1 {
+      color: rgb(0, 0, 0);
+      font-size: 2.5rem;
+      margin: 0;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+      width: 100%; /* Take full width */
+      text-align: center; /* Center text */
+    }
+    
+    /* 新导航菜单样式 */
+    .main-navigation-toggle {
+      position: fixed;
+      height: 1px; 
+      width: 1px;
+      overflow: hidden;
+      clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+    
+    .main-navigation-toggle + label {
+      position: fixed;
+      top: calc(var(--space) * 1.5);
+      right: calc(var(--space) * 2);
+      cursor: pointer;
+      z-index: 30;
+    }
+    
+    .icon--menu-toggle {
+      --size: calc(1rem + 4vmin);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--size);
+      height: var(--size);
+      stroke-width: 6;
+    }
+    
+    .icon-group {
+      transform: translateX(0);
+      transition: transform var(--nav-duration) var(--ease);
+    }
+    
+    .icon--menu {
+      stroke: var(--color-primary);
+    }
+    
+    .icon--close {
+      stroke: var(--color-secondary);
+      transform: translateX(-100%);
+    }
+    
+    .main-navigation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      transform: translateX(-100%);
+      transition: transform var(--nav-duration);
+      z-index: 20;
+    }
+    
+    .main-navigation:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #8dbeeb;
+      transform-origin: 0 50%;
+      z-index: -1;
+    }
+    
+    .main-navigation ul {
+      font-size: 12vmin;
+      font-family: var(--font-heading);
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    
+    .main-navigation li {
+      --border-size: 1vmin;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .main-navigation li:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: var(--border-size);
+      background-color: var(--color-secondary);
+      transform-origin: 0 50%;
+      transform: translateX(-100%) skew(15deg);
+    }
+    
+    .main-navigation a {
+      display: inline-block;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      color: var(--color-secondary);
+      line-height: 1;
+      text-decoration: none;
+      user-select: none;
+      padding: var(--space) calc(var(--space) * 2) calc(var(--space) + var(--border-size) / 2);
+      transform: translateY(100%);
+    }
+    
+    .main-content {
+      margin: 2rem auto;
+      max-width: 1200px;
+      width: 96%;
+      padding: 0 calc(var(--space) * 2);
+      transform: translateX(0);
+      transition: transform calc(var(--nav-duration) * 2) var(--ease);
+      padding-bottom: 0; /* Remove bottom padding from main */
+    }
+    
+    .main-content > * + * {
+      margin-top: calc(var(--space) * var(--line-height));
+    }
+    
+    .main-navigation-toggle:checked ~ label .icon--menu-toggle .icon-group {
+      transform: translateX(100%);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-content {
+      transform: translateX(10%);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation {
+      transition-duration: 0s;
+      transform: translateX(0);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation:after {
+      animation: nav-bg var(--nav-duration) var(--ease) forwards;
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:after {
+      animation: nav-line var(--duration) var(--ease) forwards;
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation a {
+      animation: link-appear calc(var(--duration) * 1.5) var(--ease) forwards;
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(1):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(1) a {
+      animation-delay: calc((var(--duration) / 2) * 0.125);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(2):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(2) a {
+      animation-delay: calc((var(--duration) / 2) * 2 * 0.125);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(3):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(3) a {
+      animation-delay: calc((var(--duration) / 2) * 3 * 0.125);
+    }
+    
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(4):after,
+    .main-navigation-toggle:checked ~ .main-navigation li:nth-child(4) a {
+      animation-delay: calc((var(--duration) / 2) * 4 * 0.125);
+    }
+    
+    @keyframes nav-bg {
+      from { transform: translateX(-100%) skewX(-15deg) }
+      to { transform: translateX(0) }
+    }
+    
+    @keyframes nav-line {
+      0%   { transform: scaleX(0); transform-origin: 0 50%; }
+      35%  { transform: scaleX(1.001); transform-origin: 0 50%; }
+      65%  { transform: scaleX(1.001); transform-origin: 100% 50%; }
+      100% { transform: scaleX(0); transform-origin: 100% 50%; }
+    }
+    
+    @keyframes link-appear {
+      0%, 25%   { transform: translateY(100%); }
+      50%, 100% { transform: translateY(0); }
+    }
+
+    /* 示例内容的其他样式 */
+    .demo-title {
+      position: absolute;
+      top: 25px;
+      left: 25px;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      color: #333;
+    }
+    
+    h3 {
+      font-size: 12px;
+      font-weight: normal;
+      margin-top: 5px;
+      color: #666;
+    }
+
+    /* 新增地图容器样式：宽度80%，高度60%，边缘圆润 */
+    #map {
+      width: 80%;
+      height: 60vh;
+      margin: 3rem auto 1rem auto; /* 增加顶部距离 */
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* 柱状图样式：位置更准确并添加3D效果 */
+    .bar {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 20px;
+      background: rgba(255, 100, 0, 0.8);
+      text-align: center;
+      color: #fff;
+      font-size: 12px;
+      transition: height 2.5s ease, transform 0.3s;
+      /* 使用translateX(-50%)让柱状图中心对齐坐标，并添加透视和旋转提升3D效果 */
+      transform: translateX(-50%) perspective(500px) rotateX(15deg);
+      transform-origin: bottom;
+      overflow: visible; /* Ensure pseudo-element is visible */
+    }
+    /* Add styles for the number above the bar */
+    .bar::before {
+      content: attr(data-weight); /* Display the weight from data attribute */
+      position: absolute;
+      top: -1.5em; /* Position above the bar */
+      left: 50%;
+      transform: translateX(-50%); /* Center the text */
+      color: #333; /* Text color */
+      font-size: 10px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .bar:hover {
+      transform: translateX(-50%) perspective(500px) rotateX(15deg) scale(1.1);
+    }
+    /* 提示框样式 */
+    .tooltip {
+      position: absolute;
+      left: 100%;
+      top: -10px;
+      background: #333;
+      color: #fff;
+      padding: 4px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      display: none;
+      font-size: 12px;
+    }
+
+    /* 替换原有的 #animate-button 样式，使用 big-button 样式 */
+    #animate-button {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      outline: none;
+      border: 0;
+      vertical-align: middle;
+      text-decoration: none;
+      font-size: 1.5rem;
+      color: var(--colorShadeA);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: "Open Sans", sans-serif;
+      padding: 1em 2em;
+      border: 2px solid var(--colorShadeA);
+      border-radius: 1em;
+      background: var(--colorShadeE);
+      transform-style: preserve-3d;
+      transition: all 175ms cubic-bezier(0, 0, 1, 1);
+    }
+    #animate-button::before {
+      position: absolute;
+      content: "";
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--colorShadeC);
+      border-radius: inherit;
+      box-shadow: 0 0 0 2px var(--colorShadeB), 0 0.75em 0 0 var(--colorShadeA);
+      transform: translate3d(0, 0.75em, -1em);
+      transition: all 175ms cubic-bezier(0, 0, 1, 1);
+      z-index: -1;
+    }
+    #animate-button:hover {
+      background: var(--colorShadeD);
+      transform: translate(0, 0.375em);
+    }
+    #animate-button:hover::before {
+      transform: translate3d(0, 0.75em, -1em);
+    }
+    #animate-button:active {
+      transform: translate(0em, 0.75em);
+    }
+    #animate-button:active::before {
+      transform: translate3d(0, 0, -1em);
+      box-shadow: 0 0 0 2px var(--colorShadeB), 0 0.25em 0 0 var(--colorShadeB);
+    }
+
+    /* 新增：按钮容器，用于将按钮放置在地图下方 */
+    #animate-container {
+      text-align: center;
+      margin-top: 1rem;
+      margin-bottom: 2rem; /* Add margin below button */
+    }
+
+    /* 新增 ECharts Morphing Chart 容器样式 */
+    #echarts-morph-chart {
+      width: 80%; /* Match map width */
+      height: 60vh; /* Adjust height as needed */
+      margin: 2rem auto; /* Center and add space */
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Copy styles from #animate-button for #morph-animate-button */
+    #morph-animate-button {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      outline: none;
+      border: 0;
+      vertical-align: middle;
+      text-decoration: none;
+      font-size: 1.5rem;
+      color: var(--colorShadeA);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: "Open Sans", sans-serif;
+      padding: 1em 2em;
+      border: 2px solid var(--colorShadeA);
+      border-radius: 1em;
+      background: var(--colorShadeE);
+      transform-style: preserve-3d;
+      transition: all 175ms cubic-bezier(0, 0, 1, 1);
+    }
+    #morph-animate-button::before {
+      position: absolute;
+      content: "";
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--colorShadeC);
+      border-radius: inherit;
+      box-shadow: 0 0 0 2px var(--colorShadeB), 0 0.75em 0 0 var(--colorShadeA);
+      transform: translate3d(0, 0.75em, -1em);
+      transition: all 175ms cubic-bezier(0, 0, 1, 1);
+      z-index: -1;
+    }
+    #morph-animate-button:hover {
+      background: var(--colorShadeD);
+      transform: translate(0, 0.375em);
+    }
+    #morph-animate-button:hover::before {
+      transform: translate3d(0, 0.75em, -1em);
+    }
+    #morph-animate-button:active {
+      transform: translate(0em, 0.75em);
+    }
+    #morph-animate-button:active::before {
+      transform: translate3d(0, 0, -1em);
+      box-shadow: 0 0 0 2px var(--colorShadeB), 0 0.25em 0 0 var(--colorShadeB);
+    }
+  </style>
+</head>
+<body>
+  <!-- 新导航菜单 -->
+  <input id="page-nav-toggle" class="main-navigation-toggle" type="checkbox" />
+  <label for="page-nav-toggle">
+    <svg class="icon--menu-toggle" viewBox="0 0 60 30">
+      <g class="icon-group">
+        <g class="icon--menu">
+          <path d="M 6 0 L 54 0" />
+          <path d="M 6 15 L 54 15" />
+          <path d="M 6 30 L 54 30" />
+        </g>
+        <g class="icon--close">
+          <path d="M 15 0 L 45 30" />
+          <path d="M 15 30 L 45 0" />
+        </g>
+      </g>
+    </svg>
+  </label>
+  <nav class="main-navigation">
+    <ul>
+      <li><a href="index.html">中国外交历史</a></li>
+      <li><a href="first.html">建交动态地图</a></li>
+      <li><a href="second.html">里程碑事件</a></li>
+      <li><a href="fourth.html">一带一路</a></li>
+    </ul>
+  </nav>
+  
+  <div id="header-container">
+    <header>
+      <h1>文化传播图</h1>
+    </header>
+  </div>
+  
+  <!-- 新增地图容器 -->
+  <div id="map"></div>
+
+  <!-- 在地图容器后，新增按钮容器 -->
+  <div id="animate-container">
+    <button id="animate-button">播放动画</button>
+  </div>
+  
+  <!-- 新增 ECharts Morphing 图表容器 -->
+  <div id="echarts-morph-chart"></div>
+  
+  <!-- Container for the Morph Button -->
+  <div id="morph-animate-container" style="text-align: center; margin-top: 1rem; margin-bottom: 2rem;">
+      <button id="morph-animate-button">切换视图</button> <!-- New Button -->
+  </div>
+  
+  <script>
+    // 示例脚本：仅包含页面加载完成后设置标题效果
+    window.onload = function() {
+      document.querySelector("header h1").textContent = document.title;
+    };
+  </script>
+  
+  <!-- 新增地图及数据可视化脚本 -->
+  <script>
+    // 初始化高德地图，默认中心设为全国范围
+    var map = new AMap.Map('map', {
+      resizeEnable: true,
+      center: [116.397428, 39.90923],
+      zoom: 4,
+      viewMode: '3D'
+    });
+    
+    // 加载并解析CSV数据
+    fetch('data/school.csv')
+      .then(response => response.text())
+      .then(text => {
+        const lines = text.trim().split('\n');
+        const data = [];
+        // 忽略标题行
+        for (let i = 1; i < lines.length; i++){
+          const [name, lat, lng, weight] = lines[i].split(',');
+          data.push({
+            name: name,
+            lat: parseFloat(lat),
+            lng: parseFloat(lng),
+            weight: parseFloat(weight)
+          });
+        }
+        addBars(data);
+      });
+    
+    // 修改 addBars 部分，将自动动画删除，保存最终高度到自定义属性
+    function addBars(data) {
+      data.forEach(item => {
+        var finalHeight = item.weight / 10;
+        var bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.style.height = '0px';
+        bar.dataset.weight = item.weight;
+
+        var tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.innerText = item.name + ': ' + item.weight;
+        bar.appendChild(tooltip);
+
+        bar.addEventListener('mouseover', function() {
+          tooltip.style.display = 'block';
+        });
+        bar.addEventListener('mouseout', function() {
+          tooltip.style.display = 'none';
+        });
+
+        var marker = new AMap.Marker({
+          position: [item.lng, item.lat],
+          offset: new AMap.Pixel(-10, 0),
+          content: bar
+        });
+        marker.setMap(map);
+
+        // 保存最终高度到自定义属性，等待按钮触发动画
+        bar.dataset.finalHeight = finalHeight;
+      });
+    }
+  </script>
+
+  <!-- 在已有的脚本末尾增加控制按钮点击事件，统一触发所有柱状图生长动画 -->
+  <script>
+    // 监听按钮点击，触发所有柱状图的动画（从0增长到最终高度）
+    document.getElementById('animate-button').addEventListener('click', function() {
+      const bars = document.querySelectorAll('.bar');
+      bars.forEach(bar => {
+        var h = bar.dataset.finalHeight;
+        // 通过 setTimeout 保证动画效果
+        setTimeout(() => {
+          bar.style.height = h + 'px';
+        }, 50);
+      });
+    });
+  </script>
+
+  <!-- 新增 ECharts Morphing Chart 脚本 -->
+  <script>
+    var morphChartDom = document.getElementById('echarts-morph-chart');
+    var morphChart = echarts.init(morphChartDom);
+    var morphOption;
+
+    morphChart.showLoading();
+
+    // Simplified mapping from institute name fragment to country name (for demo purposes)
+    // Assumes your countries.geo.json uses standard English country names
+    const countryMapping = {
+      '伦敦': 'United Kingdom of Great Britain and Northern Ireland',  // 英国
+      '巴黎': 'France',  // 法国
+      '柏林': 'Germany',  // 德国
+      '纽约': 'United States of America',  // 美国
+      '莫斯科': 'Russian Federation',  // 俄罗斯
+      '首尔': 'Republic of Korea',  // 韩国
+      '墨尔本': 'Australia',  // 澳大利亚
+      '悉尼': 'Australia',  // 澳大利亚
+      '开罗': 'Egypt',  // 埃及
+      '开普敦': 'South Africa',  // 南非
+      '里约热内卢': 'Brazil',  // 巴西
+      '多伦多': 'Canada',  // 加拿大
+      '新德里': 'India',  // 印度
+      '东京': 'Japan',  // 日本
+      '圣彼得堡': 'Russian Federation'  // 俄罗斯
+      // Add more mappings as needed based on your data and countries.geo.json
+    };
+
+    function getCountryFromName(instituteName) {
+      for (const key in countryMapping) {
+        if (instituteName.includes(key)) {
+          return countryMapping[key];
+        }
+      }
+      return null; // Or a default value like 'Other'
+    }
+
+    // Added approximate population data (Source: Wikipedia/Web Search, ~2023 estimates)
+    // Note: This is for demonstration as population data is not in source files.
+    const countryPopulations = {
+        'United Kingdom of Great Britain and Northern Ireland': 67736802,
+        'France': 64756584,
+        'Germany': 83294633,
+        'United States of America': 334805269,
+        'Russian Federation': 144444359,
+        'Republic of Korea': 51744876,
+        'Australia': 26439111,
+        'Egypt': 110990103,
+        'South Africa': 60414495,
+        'Brazil': 216422446,
+        'Canada': 38781291,
+        'India': 1428627663,
+        'Japan': 124631000 
+        // Add more populations if mapping is extended
+    };
+
+    Promise.all([
+      $.get('data/countries.geo.json'), // Load from data directory
+      fetch('data/school.csv').then(res => res.text())
+    ]).then(function ([worldJson, csvText]) {
+      morphChart.hideLoading();
+
+      // Process CSV data to count institutes, sum weights per country & add population
+      const lines = csvText.trim().split('\n');
+      const countryDataMap = {}; // Use map for easier lookup
+      let maxInstituteCount = 0;
+      let maxTotalWeight = 0; // Add max for total weight
+
+      for (let i = 1; i < lines.length; i++) { // Skip header row
+        const parts = lines[i].split(',');
+        // Ensure we have name and weight
+        if (parts.length >= 4) {
+          const instituteName = parts[0];
+          const weight = parseFloat(parts[3]);
+          const country = getCountryFromName(instituteName);
+          
+          if (country && !isNaN(weight)) { // Check if country found and weight is a number
+            if (!countryDataMap[country]) {
+                countryDataMap[country] = {
+                    name: country,
+                    instituteCount: 0, // Initialize institute count
+                    totalWeight: 0,    // Initialize total weight (students/people)
+                    population: countryPopulations[country] || 0 // Get population
+                };
+            }
+            countryDataMap[country].instituteCount++;
+            countryDataMap[country].totalWeight += weight; // Sum the weight
+            maxInstituteCount = Math.max(maxInstituteCount, countryDataMap[country].instituteCount);
+            maxTotalWeight = Math.max(maxTotalWeight, countryDataMap[country].totalWeight); // Update max total weight
+          }
+        }
+      }
+
+      // Convert map to array for ECharts data
+      let countryData = Object.values(countryDataMap);
+
+      echarts.registerMap('WORLD', worldJson);
+
+      // --- Map Option Definition (Uses TOTAL WEIGHT for color) ---
+      const mapOption = {
+        visualMap: {
+          left: 'right',
+          min: 0,
+          max: maxTotalWeight, // Use max TOTAL WEIGHT for map color scale
+          inRange: {
+             color: ['#fff7bc', '#fee391', '#fec44f', '#fe9929', '#ec7014', '#cc4c02']
+          },
+          text: ['人数多', '人数少'], // Text reflects total people
+          calculable: true
+        },
+        tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+                // Show name, institute count, total weight, and population
+                let text = params.name;
+                if (params.data) {
+                     text += '<br/>学院数: ' + (params.data.instituteCount || 0) + ' 所';
+                     text += '<br/>总人数: ' + (params.data.totalWeight || 0).toLocaleString() + ' 人';
+                     if (params.data.population) {
+                        text += '<br/>国家人口约: ' + params.data.population.toLocaleString();
+                     }
+                } else {
+                     text += ': 无数据'; // Fallback for areas without data
+                }
+                return text;
+            }
+        },
+        series: [
+          {
+            id: 'institutes',
+            type: 'map',
+            roam: true,
+            map: 'WORLD',
+            animationDurationUpdate: 1000,
+            universalTransition: true,
+            // Map series data needs totalWeight as primary value for visualMap
+            data: countryData.map(d => ({ 
+                name: d.name, 
+                value: d.totalWeight, // Value drives visualMap color now
+                instituteCount: d.instituteCount, // Keep for tooltip
+                totalWeight: d.totalWeight,     // Keep for tooltip
+                population: d.population        // Keep for tooltip
+            })),
+             itemStyle: {
+                normal: { areaColor: '#eee', borderColor: '#ccc' },
+                emphasis: { areaColor: '#lightyellow' }
+            }
+          }
+        ]
+      };
+
+      // --- Bar Option Definition (Sorted by TOTAL WEIGHT Descending) ---
+       // Create a separate array sorted by TOTAL WEIGHT for the bar chart
+      let barChartData = [...countryData]; // Create a copy
+      barChartData.sort(function (a, b) {
+        return b.totalWeight - a.totalWeight; // Sort descending by total weight
+      });
+
+      const barOption = {
+        xAxis: {
+          type: 'value',
+          axisLabel: { // Format x-axis labels if numbers get large
+              formatter: function (value) {
+                  if (value >= 1000000) return (value / 1000000) + 'M';
+                  if (value >= 1000) return (value / 1000) + 'k';
+                  return value;
+              }
+          } 
+        },
+        yAxis: {
+          type: 'category',
+          axisLabel: { rotate: 0 },
+          // Use names from totalWeight-sorted data
+          data: barChartData.map(item => item.name)
+        },
+         tooltip: {
+            trigger: 'axis',
+             axisPointer: { type: 'shadow' },
+             formatter: function(params) {
+                 const item = params[0]; // Bar chart has one series usually
+                 // Find the original data point to get all info
+                 const dataPoint = barChartData.find(d => d.name === item.name);
+                 let text = item.name;
+                 if (dataPoint) {
+                    text += '<br/>总人数: ' + (dataPoint.totalWeight || 0).toLocaleString() + ' 人'; // Primary data for bar
+                    text += '<br/>学院数: ' + (dataPoint.instituteCount || 0) + ' 所';
+                    if (dataPoint.population) {
+                       text += '<br/>国家人口约: ' + dataPoint.population.toLocaleString();
+                    }
+                 } 
+                 return text;
+             }
+        },
+        grid: { left: '15%', right: '5%', bottom: '5%', containLabel: true },
+        animationDurationUpdate: 1000,
+        series: {
+          type: 'bar',
+          id: 'institutes',
+          // Bar length represents total weight (students/people)
+          data: barChartData.map(item => item.totalWeight),
+          universalTransition: true
+        }
+      };
+
+      // --- Animation Control --- 
+      let currentOption = mapOption;
+      morphChart.setOption(mapOption);
+
+      // Add button listener
+      document.getElementById('morph-animate-button').addEventListener('click', function() {
+          currentOption = currentOption === mapOption ? barOption : mapOption;
+          morphChart.setOption(currentOption, true);
+      });
+
+    }).catch(error => {
+        morphChart.hideLoading();
+        console.error('Error loading data for morph chart:', error);
+        morphChartDom.innerHTML = '<p style="color: red; text-align: center; padding-top: 20px;">加载变形图表数据失败。请确保 \'data/countries.geo.json\' 文件存在且格式正确。</p>';
+    });
+
+    window.addEventListener('resize', function() {
+        morphChart.resize();
+    });
+  </script>
+</body>
+</html>
